@@ -10,7 +10,7 @@
         },
         {
           "type": "command",
-          "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/block-suppression-markers.py",
+          "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/block_suppression_markers.py",
           "timeout": 5
         }
       ]
@@ -30,7 +30,7 @@
         },
         {
           "type": "command",
-          "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/prefer-tools.py",
+          "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/prefer_tools.py",
           "timeout": 5
         }
       ]

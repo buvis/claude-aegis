@@ -1,6 +1,6 @@
 # Prefer Tools Over Bash
 
-The `prefer-tools.py` hook blocks Bash commands that invoke `grep`, `find`, `cat`, `head`, or `tail` when a dedicated tool would be cleaner.
+The `prefer_tools.py` hook blocks Bash commands that invoke `grep`, `find`, `cat`, `head`, or `tail` when a dedicated tool would be cleaner.
 
 ## Rule
 

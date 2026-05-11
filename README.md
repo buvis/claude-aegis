@@ -10,9 +10,9 @@ Defensive PreToolUse hooks for [Claude Code](https://claude.ai/code). Five small
 
 | Hook | Tool matcher | What it blocks |
 |------|--------------|----------------|
-| `prefer-tools.py` | Bash | `grep`, `find`, `cat`, `head`, `tail` — surfaces the Grep/Glob/Read alternative |
+| `prefer_tools.py` | Bash | `grep`, `find`, `cat`, `head`, `tail` — surfaces the Grep/Glob/Read alternative |
 | `block_devlocal_redirects.py` | Bash | shell redirects (`>`, `>>`, `&>`, `tee`) into `dev/local/` — use Write |
-| `block-suppression-markers.py` | Edit, Write, MultiEdit | newly added lint or type-checker suppression comments across 12 languages |
+| `block_suppression_markers.py` | Edit, Write, MultiEdit | newly added lint or type-checker suppression comments across 12 languages |
 | `protect_config.py` | Edit, Write, MultiEdit | edits to ~40 well-known linter and formatter config files |
 | `validate_commit_msg.py` | Bash | non-conventional commit messages, trailing periods, generated-by trailers |
 
