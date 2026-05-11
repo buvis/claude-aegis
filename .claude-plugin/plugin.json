@@ -1,0 +1,6 @@
+{
+  "name": "aegis",
+  "version": "0.1.0",
+  "description": "PreToolUse safety net: five hooks that block bash-over-tool, dev/local redirects, suppression markers, weakened linter configs, and non-conventional commits.",
+  "author": { "name": "buvis" }
+}

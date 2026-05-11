@@ -1,0 +1,15 @@
+{
+  "name": "claude-aegis",
+  "description": "PreToolUse safety net hooks for Claude Code.",
+  "owner": { "name": "buvis" },
+  "plugins": [
+    {
+      "name": "aegis",
+      "description": "Five PreToolUse hooks: prefer tools over bash, block dev/local redirects, block suppression markers, protect linter configs, validate commit messages.",
+      "version": "0.1.0",
+      "author": { "name": "buvis" },
+      "source": "./",
+      "category": "guardrails"
+    }
+  ]
+}
