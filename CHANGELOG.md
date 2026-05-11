@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-05-11
+
 ### Fixed
 
 - **aegis**: wrap `hooks/hooks.json` event config in a top-level `hooks` object so Claude Code's plugin loader accepts the file (previously failed with "expected record, received undefined" at path `hooks`, leaving all five PreToolUse hooks unregistered).

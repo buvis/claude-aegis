@@ -8,7 +8,7 @@
     {
       "name": "aegis",
       "description": "Five PreToolUse hooks: prefer tools over bash, block dev/local redirects, block suppression markers, protect linter configs, validate commit messages.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "author": {
         "name": "buvis"
       },
