@@ -22,3 +22,17 @@ The hook will block `git commit -m ...` invocations that:
 - Contain forbidden boilerplate (`Co-Authored-By`, `Signed-Off-By`, `Generated-By`, `Generated with`)
 
 If the message can't be parsed (e.g. unquoted, complex shell construction, heredoc with a non-`EOF` delimiter), the hook allows the commit through rather than blocking on ambiguity.
+
+## Force Push section
+
+The `block_force_push.py` hook enforces the rule in this section.
+
+Force-pushing rewrites history on the remote and can drop other commits. It must never run automatically as part of an agent's work.
+
+A `git push` is treated as a force push when its arguments include:
+
+- `--force` or `-f` (including bundled short flags such as `-fu`)
+- `--force-with-lease`, with or without an `=<arg>` value
+- a `+`-prefixed refspec (`+master`, `+HEAD:master`), which forces that single ref
+
+When the hook sees one, it blocks the command (exit 2). This does not make force pushing impossible: the block message points at the `!` prefix, which runs a command outside the agent tool layer and so bypasses the hook. A genuine force push therefore always takes a deliberate human action. Plain pushes, `--set-upstream`, and `git fetch --force` are unaffected. A `--force` appearing inside a quoted commit message does not trigger the hook.

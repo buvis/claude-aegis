@@ -4,7 +4,7 @@
 
 > "What [Athena] holds is the aegis, terror of mortal men." — *Iliad*, V.738
 
-Defensive PreToolUse hooks for [Claude Code](https://claude.ai/code). Six small Python scripts that catch the most common ways an agent quietly degrades a codebase: reaching for bash text utilities instead of dedicated tools, writing into `dev/local/` with shell redirects, slipping in a lint-suppression comment to make a warning vanish, editing the linter config to weaken a rule, attaching generated-by boilerplate to a commit, or hand-rolling a poll loop to wait for a background task.
+Defensive PreToolUse hooks for [Claude Code](https://claude.ai/code). Seven small Python scripts that catch the most common ways an agent quietly degrades a codebase: reaching for bash text utilities instead of dedicated tools, writing into `dev/local/` with shell redirects, slipping in a lint-suppression comment to make a warning vanish, editing the linter config to weaken a rule, attaching generated-by boilerplate to a commit, hand-rolling a poll loop to wait for a background task, or force-pushing over remote history without a second look.
 
 ## What's inside
 
@@ -16,8 +16,11 @@ Defensive PreToolUse hooks for [Claude Code](https://claude.ai/code). Six small 
 | `protect_config.py` | Edit, Write, MultiEdit | edits to ~40 well-known linter and formatter config files |
 | `validate_commit_msg.py` | Bash | non-conventional commit messages, trailing periods, generated-by trailers |
 | `block_poll_loops.py` | Bash, Monitor | hand-rolled task-completion poll loops — points to the `TaskOutput` tool |
+| `block_force_push.py` | Bash | `git push --force` / `-f` / `--force-with-lease` / `+refspec` — force pushes never run automatically |
 
-Each hook reads a single JSON object from stdin and signals via exit code (0 = allow, 2 = block with a human-readable reason on stderr). All six run as PreToolUse hooks; nothing fires after the fact.
+Each hook reads a single JSON object from stdin and signals via exit code (0 = allow, 2 = block with a human-readable reason on stderr). All seven run as PreToolUse hooks; nothing fires after the fact.
+
+`block_force_push.py` does not make force pushing impossible — its block message points at the `!` prefix, which runs a command outside the agent tool layer. The effect is that a force push always takes a deliberate human action and never happens silently.
 
 The `rules/` directory documents the policy each hook enforces. Hooks cite these paths in their error messages so you can look up the "why" without leaving the terminal.
 

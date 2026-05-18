@@ -38,6 +38,11 @@
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/block_poll_loops.py",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/block_force_push.py",
+            "timeout": 5
           }
         ]
       },

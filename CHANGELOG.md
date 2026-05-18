@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **aegis**: `block_force_push.py` hook - denies any `git push` carrying a force indicator (`--force`, `-f`, `--force-with-lease`, or a `+`-prefixed refspec). The block message points at the `!` prefix, which runs a command outside the agent tool layer, so a force push always takes a deliberate human action and never runs silently. Tokenizes the command with `shlex` and scans per shell segment, so a `--force` inside a quoted commit message does not false-trigger. Registered under the existing `Bash` PreToolUse matcher.
+
 ## [0.1.3] - 2026-05-18
 
 ### Added
