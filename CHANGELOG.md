@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-05-18
+
 ### Added
 
 - **aegis**: `block_poll_loops.py` hook - denies hand-rolled task-completion poll loops (`while`/`until` + `sleep` + a `wc`/`stat`/`du` size check, a `*.output`/`tasks/` path, or a `kill -0`/`pgrep` process-liveness check) in `Bash` and `Monitor` tool calls, pointing to the `TaskOutput` tool instead. Registers a new `Monitor` PreToolUse matcher.
