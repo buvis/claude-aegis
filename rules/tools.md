@@ -20,3 +20,26 @@ Pipe patterns have first-class replacements:
 - `find ... | xargs y` → `Glob`, then call `y` per file
 
 `rg` for ad-hoc shell recon is allowed (faster than grep, respects `.gitignore`). For code search inside the model, prefer `Grep`.
+
+# Don't Hand-Roll Task-Completion Poll Loops
+
+The `block_poll_loops.py` hook denies `Bash` and `Monitor` commands that poll a background task's output file in a shell loop.
+
+## Rule
+
+A command is denied when it combines all of:
+
+- a `while` or `until` loop, and
+- a `sleep`, and
+- one of: a size check (`wc -c`, `stat`, `du`), a `*.output` / `tasks/` path, or a process-liveness check (`kill -0`, `pgrep`).
+
+That shape is a hand-rolled wait for a background task to finish. It is wrong twice over:
+
+- **Fragile.** A slow stream that pauses mid-output looks "stable", so the loop declares completion early and a truncated result gets read.
+- **Stalls autopilot.** The shell control flow cannot be statically analyzed, so it forces a permission prompt - which blocks an unattended run.
+
+## Use instead
+
+`TaskOutput(task_id, block=true, timeout=600000)` blocks until the task completes or the deadline (600000 ms = 10 min, the max per call) and returns status. Then `Read` the task's output file.
+
+The scope is deliberately tight: it catches task-completion polling, not every loop. A legitimate `Monitor` poll loop (`while true` polling a remote API, with none of the three signals above) is not affected.

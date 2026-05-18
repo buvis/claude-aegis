@@ -4,7 +4,7 @@
 
 > "What [Athena] holds is the aegis, terror of mortal men." — *Iliad*, V.738
 
-Defensive PreToolUse hooks for [Claude Code](https://claude.ai/code). Five small Python scripts that catch the most common ways an agent quietly degrades a codebase: reaching for bash text utilities instead of dedicated tools, writing into `dev/local/` with shell redirects, slipping in a lint-suppression comment to make a warning vanish, editing the linter config to weaken a rule, or attaching generated-by boilerplate to a commit.
+Defensive PreToolUse hooks for [Claude Code](https://claude.ai/code). Six small Python scripts that catch the most common ways an agent quietly degrades a codebase: reaching for bash text utilities instead of dedicated tools, writing into `dev/local/` with shell redirects, slipping in a lint-suppression comment to make a warning vanish, editing the linter config to weaken a rule, attaching generated-by boilerplate to a commit, or hand-rolling a poll loop to wait for a background task.
 
 ## What's inside
 
@@ -15,8 +15,9 @@ Defensive PreToolUse hooks for [Claude Code](https://claude.ai/code). Five small
 | `block_suppression_markers.py` | Edit, Write, MultiEdit | newly added lint or type-checker suppression comments across 12 languages |
 | `protect_config.py` | Edit, Write, MultiEdit | edits to ~40 well-known linter and formatter config files |
 | `validate_commit_msg.py` | Bash | non-conventional commit messages, trailing periods, generated-by trailers |
+| `block_poll_loops.py` | Bash, Monitor | hand-rolled task-completion poll loops — points to the `TaskOutput` tool |
 
-Each hook reads a single JSON object from stdin and signals via exit code (0 = allow, 2 = block with a human-readable reason on stderr). All five run as PreToolUse hooks; nothing fires after the fact.
+Each hook reads a single JSON object from stdin and signals via exit code (0 = allow, 2 = block with a human-readable reason on stderr). All six run as PreToolUse hooks; nothing fires after the fact.
 
 The `rules/` directory documents the policy each hook enforces. Hooks cite these paths in their error messages so you can look up the "why" without leaving the terminal.
 
