@@ -55,6 +55,20 @@ class TestBlocks(unittest.TestCase):
         r = run_hook("echo foo > dev/local/prds/wip/note.md")
         self.assertEqual(r.returncode, 2)
 
+    def test_blocks_noclobber_override(self) -> None:
+        # `>|` is a real write redirect (noclobber override).
+        r = run_hook("echo foo >| dev/local/x.md")
+        self.assertEqual(r.returncode, 2)
+
+    def test_blocks_double_quoted_redirect_target(self) -> None:
+        # A quoted path is a normal redirect target (required for spaces).
+        r = run_hook('echo foo > "dev/local/x.md"')
+        self.assertEqual(r.returncode, 2)
+
+    def test_blocks_single_quoted_redirect_target(self) -> None:
+        r = run_hook("echo foo > 'dev/local/x.md'")
+        self.assertEqual(r.returncode, 2)
+
 
 class TestAllows(unittest.TestCase):
     def test_allows_redirect_to_tmp(self) -> None:
@@ -67,6 +81,11 @@ class TestAllows(unittest.TestCase):
 
     def test_allows_grep_in_devlocal(self) -> None:
         r = run_hook("grep -r foo dev/local/")
+        self.assertEqual(r.returncode, 0)
+
+    def test_allows_tee_reading_from_devlocal(self) -> None:
+        # Reads FROM dev/local and writes elsewhere; no write into dev/local.
+        r = run_hook("tee /tmp/a < dev/local/x.md")
         self.assertEqual(r.returncode, 0)
 
     def test_allows_empty_command(self) -> None:

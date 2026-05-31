@@ -5,17 +5,22 @@ type-checker suppression markers. Policy is to fix the root cause.
 Policy: aegis/rules/coding-style.md (Warnings section).
 Exit 0 = allow, Exit 2 = block."""
 
-import json
 import re
-import sys
+
+from _common import allow, block, read_input
 
 SUPPRESSION_PATTERNS = [
     (r"#!?\[allow\(", "Rust #[allow(...)] / #![allow(...)]"),
     (r"#\s*type:\s*ignore", "Python # type: ignore"),
+    (r"#\s*pyright:\s*ignore", "Python # pyright: ignore"),
+    (r"#\s*mypy:\s*(?:ignore|disable)", "Python # mypy: ignore / disable"),
     (r"#\s*noqa", "Python # noqa"),
+    (r"#\s*(?:ruff|flake8):\s*noqa", "Python # ruff/flake8: noqa (file-level)"),
     (r"#\s*pylint:\s*disable", "Python # pylint: disable"),
+    (r"#\s*nosec", "Python # nosec (bandit)"),
     (r"//\s*eslint-disable", "JS/TS // eslint-disable"),
     (r"/\*\s*eslint-disable", "JS/TS /* eslint-disable */"),
+    (r"//\s*biome-ignore", "JS/TS // biome-ignore"),
     (r"//\s*@ts-ignore", "TS // @ts-ignore"),
     (r"//\s*@ts-nocheck", "TS // @ts-nocheck"),
     (r"//\s*@ts-expect-error", "TS // @ts-expect-error"),
@@ -48,7 +53,7 @@ def diff_added(old_text: str, new_text: str) -> list[tuple[str, int]]:
 
 
 def main() -> None:
-    payload = json.loads(sys.stdin.read())
+    payload = read_input()
     tool = payload.get("tool_name", "")
     inp = payload.get("tool_input", {})
 
@@ -73,19 +78,19 @@ def main() -> None:
         for label, n in diff_added(old_text, new_text):
             additions.append((label, n, "Write"))
     else:
-        sys.exit(0)
+        allow()
 
     if not additions:
-        sys.exit(0)
+        allow()
 
-    print("BLOCKED: change adds lint/type-checker suppression markers.", file=sys.stderr)
-    print("", file=sys.stderr)
-    for label, n, where in additions:
-        print(f"  + {label} (x{n}, in {where})", file=sys.stderr)
-    print("", file=sys.stderr)
-    print("Policy: fix the root cause, don't silence warnings.", file=sys.stderr)
-    print("See aegis/rules/coding-style.md (Warnings section).", file=sys.stderr)
-    sys.exit(2)
+    lines = ["BLOCKED: change adds lint/type-checker suppression markers.", ""]
+    lines += [f"  + {label} (x{n}, in {where})" for label, n, where in additions]
+    lines += [
+        "",
+        "Policy: fix the root cause, don't silence warnings.",
+        "See aegis/rules/coding-style.md (Warnings section).",
+    ]
+    block("\n".join(lines))
 
 
 if __name__ == "__main__":

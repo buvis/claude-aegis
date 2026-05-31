@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **aegis**: `block_suppression_markers.py` now detects more suppression forms - ruff/flake8 file-level disables, pyright and mypy ignores, bandit nosec, and biome-ignore.
+- **aegis**: dedicated test suites for `prefer_tools.py` and `block_suppression_markers.py` (closes the 0.1.1 known gap); the suite is now 142 subprocess-based tests.
+
+### Changed
+
+- **aegis**: `block_poll_loops.py` now requires a completion exit (a `break`, or an `until` condition) alongside a file poll. A bare metric/monitor loop with no completion `break` (e.g. `while true; do du -sh /var; sleep 60; done`) is no longer blocked; process-liveness loops still are.
+- **aegis**: `prefer_tools.py` ignores matches inside quoted strings, so a denied word merely named in a commit message (`git commit -m 'see a | grep b'`) no longer false-blocks.
+- **aegis**: all seven hooks now share `_common` (`read_input`/`allow`/`block`); `prefer_tools.py` and `block_suppression_markers.py` no longer reimplement stdin parsing.
+
+### Fixed
+
+- **aegis**: `block_suppression_markers.py` no longer crashes (exit 1 traceback) on empty or malformed input; it now fails open like the other hooks.
+- **aegis**: `validate_commit_msg.py` no longer misses boilerplate or bad format in multiple `-m` flags, `--message=`, no-space `-m"x"`, grouped `-am`, or env-var / `git -c`-prefixed commits; heredoc commit construction is now blocked outright.
+- **aegis**: `block_force_push.py` now catches `git` invoked by path (`/usr/bin/git push --force`) and no longer false-blocks a plain push whose trailing shell comment mentions `--force`.
+- **aegis**: `block_devlocal_redirects.py` now catches the `>|` noclobber-override redirect and no longer blocks a `tee` that only reads from `dev/local/`.
+- **aegis**: the plugin and marketplace manifests advertised "five hooks"; corrected to seven (`block_poll_loops` and `block_force_push` were omitted).
+
 ## [0.1.4] - 2026-05-18
 
 ### Added

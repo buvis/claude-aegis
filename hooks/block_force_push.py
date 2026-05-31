@@ -47,6 +47,11 @@ def is_force_flag(token: str) -> bool:
     )
 
 
+def is_git_token(token: str) -> bool:
+    """True for `git` invoked bare or by path (`/usr/bin/git`, `./git`)."""
+    return token == "git" or token.endswith("/git")
+
+
 def is_plus_refspec(token: str) -> bool:
     """True for a `+`-prefixed refspec (`+master`, `+HEAD:master`).
 
@@ -80,13 +85,13 @@ def push_segments(tokens: list[str]) -> list[list[str]]:
 def is_force_push(command: str) -> bool:
     """True when any shell segment is a `git push` carrying a force indicator."""
     try:
-        tokens = shlex.split(command)
+        tokens = shlex.split(command, comments=True)
     except ValueError:
         # Unparseable command. A force push is unlikely to be unparseable, and
         # blocking on ambiguity would be noisy; allow it through.
         return False
     for segment in push_segments(tokens):
-        if "git" not in segment or "push" not in segment:
+        if not any(is_git_token(t) for t in segment) or "push" not in segment:
             continue
         push_args = segment[segment.index("push") + 1 :]
         if any(is_force_flag(t) or is_plus_refspec(t) for t in push_args):

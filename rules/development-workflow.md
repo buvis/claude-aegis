@@ -15,13 +15,13 @@ Rules:
 - NEVER add `Co-Authored-By`, `Signed-Off-By`, `Generated-By`, or any trailer/footer
 - Use simple `git commit -m "<message>"` — no HEREDOC tricks, no multi-line
 
-The hook will block `git commit -m ...` invocations that:
+The hook checks every message a `git commit` carries - across multiple `-m` flags, `--message=`, no-space `-m"x"`, grouped short flags like `-am`, and through env-var or `git -c key=val` prefixes - and blocks when the message:
 
-- Don't match the conventional format above
-- End with a period
-- Contain forbidden boilerplate (`Co-Authored-By`, `Signed-Off-By`, `Generated-By`, `Generated with`)
+- Doesn't match the conventional format above
+- Ends with a period
+- Contains forbidden boilerplate at the start of a line (`Co-Authored-By`, `Signed-Off-By`, `Generated-By`, `Generated with`)
 
-If the message can't be parsed (e.g. unquoted, complex shell construction, heredoc with a non-`EOF` delimiter), the hook allows the commit through rather than blocking on ambiguity.
+Heredoc commit construction (`git commit -m "$(cat <<EOF ... )"`) is blocked outright, in line with the "no HEREDOC tricks" rule above. When no message can be parsed (e.g. `-F file`, an editor commit, a complex construction), the hook allows the commit through rather than blocking on ambiguity.
 
 ## Force Push section
 

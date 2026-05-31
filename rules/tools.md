@@ -4,7 +4,7 @@ The `prefer_tools.py` hook blocks Bash commands that invoke `grep`, `find`, `cat
 
 ## Rule
 
-Any segment of a Bash command that starts with one of these binaries is denied. This applies whether the binary is standalone, inside a pipe, inside a chain (`&&`, `;`), behind `xargs`, or inside `$(...)` / backticks.
+Any segment of a Bash command that starts with one of these binaries is denied. This applies whether the binary is standalone, inside a pipe, inside a chain (`&&`, `;`), behind `xargs`, or inside `$(...)` / backticks. A denied word inside a quoted string (e.g. in a commit message describing `a | grep b`) is data, not a command, and is allowed.
 
 | Bash command | Use instead | Why |
 |---|---|---|
@@ -31,7 +31,9 @@ A command is denied when it combines all of:
 
 - a `while` or `until` loop, and
 - a `sleep`, and
-- one of: a size check (`wc -c`, `stat`, `du`), a `*.output` / `tasks/` path, or a process-liveness check (`kill -0`, `pgrep`).
+- EITHER a process-liveness check (`kill -0`, `pgrep` - the loop waits for a process to die), OR a file poll (a size check `wc -c` / `stat` / `du`, or a `*.output` / `tasks/` path) that carries a completion exit (a `break`, or an `until` condition).
+
+The completion-exit requirement keeps the scope tight. A loop that merely emits a metric every N seconds and never breaks on the polled value (`while true; do du -sh /var; sleep 60; done`) is a live monitor, not a task wait, so it is allowed. Process-liveness loops are inherently completion waits and need no separate exit signal.
 
 That shape is a hand-rolled wait for a background task to finish. It is wrong twice over:
 
@@ -42,4 +44,4 @@ That shape is a hand-rolled wait for a background task to finish. It is wrong tw
 
 `TaskOutput(task_id, block=true, timeout=600000)` blocks until the task completes or the deadline (600000 ms = 10 min, the max per call) and returns status. Then `Read` the task's output file.
 
-The scope is deliberately tight: it catches task-completion polling, not every loop. A legitimate `Monitor` poll loop (`while true` polling a remote API, with none of the three signals above) is not affected.
+The scope is deliberately tight: it catches task-completion polling, not every loop. A legitimate `Monitor` poll loop (`while true` polling a remote API, or emitting a metric with no completion `break`) is not affected.

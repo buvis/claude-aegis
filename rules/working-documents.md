@@ -6,7 +6,7 @@ The `block_devlocal_redirects.py` hook blocks shell redirects writing into `dev/
 
 All self-created working documents go in `dev/local/` in the repo root. Ensure `dev/local/` is in `.gitignore`.
 
-Always use the Write tool for `dev/local/` files, even when the current working directory is elsewhere. Never use Bash shell redirects (`cat >`, `echo >`, `>>`, `&>`, `tee`) to write files under `dev/local/`.
+Always use the Write tool for `dev/local/` files, even when the current working directory is elsewhere. Never use Bash shell redirects (`cat >`, `echo >`, `>>`, `>|`, `&>`, `tee`) to write files under `dev/local/`.
 
 ## Why
 

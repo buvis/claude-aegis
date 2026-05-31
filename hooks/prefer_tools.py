@@ -2,11 +2,10 @@
 
 Hard deny (exit 2) when any segment of a Bash command invokes one of
 `grep|find|cat|head|tail` - either as a standalone command or inside a
-pipe/chain. The model has dedicated Grep/Glob/Read tools that are
-faster, cheaper, and produce structured output. `Grep` accepts
-`head_limit` and `output_mode`, `Read` accepts `offset`/`limit`, so the
-common pipe patterns (`grep ... | head`, `cat file | jq`) have first-
-class replacements.
+pipe/chain/subshell. The model has dedicated Grep/Glob/Read tools that are
+faster, cheaper, and produce structured output. `Grep` accepts `head_limit`
+and `output_mode`, `Read` accepts `offset`/`limit`, so the common pipe
+patterns (`grep ... | head`, `cat file | jq`) have first-class replacements.
 
 `rg` is allowed (faster than grep, respects .gitignore).
 `jq` is allowed; the right replacement for `cat file | jq '...'` is
@@ -15,9 +14,9 @@ class replacements.
 Policy: see this plugin's rules/tools.md.
 """
 
-import json
 import re
-import sys
+
+from _common import allow, block, read_input
 
 DENY = {
     "grep": "Grep (supports head_limit, output_mode, glob filters)",
@@ -26,6 +25,12 @@ DENY = {
     "head": "Read with offset/limit (or Grep's head_limit)",
     "tail": "Read with offset/limit",
 }
+
+# Quoted spans are data, not commands. Strip them before splitting so a denied
+# word inside a string (`git commit -m 'see a | grep b'`) is never parsed as a
+# real pipeline segment and wrongly blocked. Safe here because the input is a
+# shell command, where quotes are genuine delimiters.
+QUOTED_RE = re.compile(r"'[^']*'|\"[^\"]*\"")
 
 # Split a command into segments on shell separators: | ; && || and subshell openers $( `
 SEGMENT_RE = re.compile(r"\|\|?|&&|;|\$\(|`")
@@ -40,7 +45,9 @@ WRAPPERS = {"xargs", "time", "nice", "sudo", "command", "env"}
 def first_meaningful_token(segment: str) -> str:
     """Return the first token of a segment, peeling subshell openers and wrappers.
 
-    For `xargs grep foo` returns `grep`. For `$(cat file)` returns `cat`.
+    For `xargs grep foo` returns `grep`. For `$(cat file)` returns `cat`. Leading
+    env-var assignments (`LC_ALL=C grep`) and wrappers (`sudo`, `time`, ...) are
+    peeled so the denied binary behind them is still seen.
     """
     seg = segment.strip()
     # Peel any number of subshell openers
@@ -63,35 +70,23 @@ def first_meaningful_token(segment: str) -> str:
 
 
 def main() -> None:
-    raw = sys.stdin.read()
-    if not raw.strip():
-        sys.exit(0)
-    try:
-        data = json.loads(raw)
-    except json.JSONDecodeError:
-        sys.exit(0)
-    if not isinstance(data, dict):
-        sys.exit(0)
-
-    cmd = (data.get("tool_input") or {}).get("command") or ""
-    cmd = cmd.strip()
+    data = read_input()
+    cmd = ((data.get("tool_input") or {}).get("command") or "").strip()
     if not cmd:
-        sys.exit(0)
-
-    for segment in SEGMENT_RE.split(cmd):
+        allow()
+    scan = QUOTED_RE.sub("", cmd)
+    for segment in SEGMENT_RE.split(scan):
         first = first_meaningful_token(segment)
         target = DENY.get(first)
         if target:
-            print(
+            block(
                 f"Blocked: use the {target} tool instead of bash `{first}`. "
                 f"It is faster, returns structured output, and respects file ignores. "
                 f"This applies inside pipes/chains too: `grep ... | head` -> Grep with "
                 f"head_limit; `cat file | jq '...'` -> `jq '...' file`. "
-                f"Policy: aegis/rules/tools.md.",
-                file=sys.stderr,
+                f"Policy: aegis/rules/tools.md."
             )
-            sys.exit(2)
-    sys.exit(0)
+    allow()
 
 
 if __name__ == "__main__":

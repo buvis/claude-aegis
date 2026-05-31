@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "aegis",
-      "description": "Five PreToolUse hooks: prefer tools over bash, block dev/local redirects, block suppression markers, protect linter configs, validate commit messages.",
+      "description": "Seven PreToolUse hooks: prefer tools over bash, block dev/local redirects, block suppression markers, protect linter configs, validate commit messages, block task-completion poll loops, block automatic force pushes.",
       "version": "0.1.4",
       "author": {
         "name": "buvis"

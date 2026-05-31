@@ -6,7 +6,7 @@ Two hooks enforce sections of this rule file: `block_suppression_markers.py` (Wa
 
 NEVER silence warnings with suppression markers. Fix the root cause.
 
-The hook blocks any Edit/Write/MultiEdit that newly adds a suppression marker. It recognises common forms across Rust, Python, JavaScript, TypeScript, Java, Go, and C/C++. The canonical, version-tracked list of detected patterns lives in `hooks/block_suppression_markers.py` (see `SUPPRESSION_PATTERNS`). Add new languages there, not here.
+The hook blocks any Edit/Write/MultiEdit that newly adds a suppression marker. It recognises common forms across Rust, Python (lint, type-checker, and security suppressions), JavaScript, TypeScript, Java, Go, and C/C++. The canonical, version-tracked list of detected patterns lives in `hooks/block_suppression_markers.py` (see `SUPPRESSION_PATTERNS`). Add new languages there, not here.
 
 If you discover pre-existing suppression markers, surface them and push for action. Do not extend them silently.
 

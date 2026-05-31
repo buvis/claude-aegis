@@ -38,29 +38,24 @@ class TestBlocks(unittest.TestCase):
         self.assertEqual(r.returncode, 2)
         self.assertIn("TaskOutput", r.stderr)
 
-    def test_blocks_while_sleep_wc_c(self) -> None:
-        r = run_hook('while true; do wc -c < out; sleep 2; done')
+    def test_blocks_size_poll_with_break(self) -> None:
+        # A size poll that breaks on stability is the real antipattern.
+        cmd = 'while true; do c=$(wc -c < f); [ "$c" = "$p" ] && break; p=$c; sleep 5; done'
+        r = run_hook(cmd)
         self.assertEqual(r.returncode, 2)
 
     def test_blocks_until_sleep_stat(self) -> None:
+        # `until <file-state>` makes the loop a completion poll.
         r = run_hook('until [ -s f ]; do stat f; sleep 1; done')
         self.assertEqual(r.returncode, 2)
 
-    def test_blocks_while_sleep_tasks_path(self) -> None:
-        r = run_hook('while true; do cat /tmp/x/tasks/abc; sleep 3; done')
-        self.assertEqual(r.returncode, 2)
-
-    def test_blocks_while_sleep_output_file(self) -> None:
+    def test_blocks_output_file_break(self) -> None:
         r = run_hook('while :; do test -s run.output && break; sleep 1; done')
         self.assertEqual(r.returncode, 2)
 
-    def test_blocks_multiline_loop(self) -> None:
-        r = run_hook('while true\ndo\n  wc -l f\n  sleep 5\ndone')
-        self.assertEqual(r.returncode, 2)
-
     def test_blocks_kill0_pgrep_liveness_loop(self) -> None:
-        # The observed real-world antipattern: poll process liveness, no size
-        # check and no .output/tasks path - the size-poll branch alone misses it.
+        # Process-liveness wait: no size check, no .output path - the loop runs
+        # while a process is alive, which is itself a completion wait.
         cmd = (
             'while kill -0 $(pgrep -f sonnet-run.sh | head -1) 2>/dev/null; '
             'do sleep 5; done; echo done'
@@ -73,10 +68,59 @@ class TestBlocks(unittest.TestCase):
         r = run_hook('until [ -z "$(pgrep -f codex-run.sh)" ]; do sleep 3; done')
         self.assertEqual(r.returncode, 2)
 
+    def test_blocks_while_condition_output_poll(self) -> None:
+        # Completion test in the `while` header (no `break`) is still a task wait.
+        r = run_hook('while [ ! -s job.output ]; do sleep 1; done')
+        self.assertEqual(r.returncode, 2)
+
+    def test_blocks_while_condition_existence_poll(self) -> None:
+        r = run_hook('while ! test -f /tmp/x/tasks/job; do sleep 3; done')
+        self.assertEqual(r.returncode, 2)
+
+    def test_blocks_while_condition_size_threshold_poll(self) -> None:
+        cmd = 'while [ $(wc -c < /tmp/x/tasks/job.output) -lt 1000 ]; do sleep 5; done'
+        r = run_hook(cmd)
+        self.assertEqual(r.returncode, 2)
+
 
 class TestAllows(unittest.TestCase):
+    def test_allows_metric_loop_without_completion_exit(self) -> None:
+        # A bare size loop that never breaks on the polled value is a live
+        # monitor, not a task-completion wait.
+        r = run_hook('while true; do wc -c < out; sleep 2; done')
+        self.assertEqual(r.returncode, 0)
+
+    def test_allows_disk_usage_monitor(self) -> None:
+        # The Monitor tool's own documented pattern.
+        r = run_hook('while true; do du -sh /var/log; sleep 60; done')
+        self.assertEqual(r.returncode, 0)
+
+    def test_allows_log_growth_monitor(self) -> None:
+        r = run_hook('while true; do wc -l access.log; sleep 10; done')
+        self.assertEqual(r.returncode, 0)
+
+    def test_allows_mtime_watch_monitor(self) -> None:
+        r = run_hook('while true; do stat -c%Y src.c; sleep 1; done')
+        self.assertEqual(r.returncode, 0)
+
+    def test_allows_bracket_one_monitor(self) -> None:
+        # `while [ 1 ]` is an infinite monitor, same as `while true`.
+        r = run_hook('while [ 1 ]; do du -sh /var/log; sleep 60; done')
+        self.assertEqual(r.returncode, 0)
+
+    def test_allows_arith_true_monitor(self) -> None:
+        r = run_hook('while (( 1 )); do stat -c%Y src.c; sleep 1; done')
+        self.assertEqual(r.returncode, 0)
+
+    def test_allows_while_sleep_paced_monitor(self) -> None:
+        r = run_hook('while sleep 5; do wc -l access.log; done')
+        self.assertEqual(r.returncode, 0)
+
+    def test_allows_tasks_path_loop_without_exit(self) -> None:
+        r = run_hook('while true; do cat /tmp/x/tasks/abc; sleep 3; done')
+        self.assertEqual(r.returncode, 0)
+
     def test_allows_legit_monitor_api_poll(self) -> None:
-        # Monitor's documented pattern: poll a remote API, no size check.
         r = run_hook('while true; do gh api repos/o/r/issues/1; sleep 30; done')
         self.assertEqual(r.returncode, 0)
 
@@ -88,10 +132,6 @@ class TestAllows(unittest.TestCase):
         r = run_hook('wc -c < some.output')
         self.assertEqual(r.returncode, 0)
 
-    def test_allows_output_reference_without_loop(self) -> None:
-        r = run_hook('echo run.output')
-        self.assertEqual(r.returncode, 0)
-
     def test_allows_tail_f_of_task_output(self) -> None:
         r = run_hook('tail -f /tmp/x/tasks/abc.output')
         self.assertEqual(r.returncode, 0)
@@ -101,7 +141,6 @@ class TestAllows(unittest.TestCase):
         self.assertEqual(r.returncode, 0)
 
     def test_allows_oneshot_kill0_liveness_check(self) -> None:
-        # A bare liveness probe with no loop is not the antipattern.
         r = run_hook('kill -0 999 && echo alive')
         self.assertEqual(r.returncode, 0)
 

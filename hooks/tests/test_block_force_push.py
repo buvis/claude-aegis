@@ -63,6 +63,11 @@ class TestBlocks(unittest.TestCase):
         r = run_hook("git add -A && git push --force")
         self.assertEqual(r.returncode, 2)
 
+    def test_blocks_git_invoked_by_path(self) -> None:
+        # An absolute/relative path to git must not slip past the token check.
+        r = run_hook("/usr/bin/git push --force origin master")
+        self.assertEqual(r.returncode, 2)
+
     def test_block_message_points_to_bang_prefix(self) -> None:
         r = run_hook("git push --force")
         self.assertIn("!", r.stderr)
@@ -98,6 +103,11 @@ class TestAllows(unittest.TestCase):
 
     def test_allows_unrelated_command(self) -> None:
         r = run_hook("ls -la")
+        self.assertEqual(r.returncode, 0)
+
+    def test_allows_trailing_comment_mentioning_force(self) -> None:
+        # A shell comment is stripped; the real command is a plain push.
+        r = run_hook("git push origin master # use --force only if rejected")
         self.assertEqual(r.returncode, 0)
 
     def test_allows_empty_stdin(self) -> None:
