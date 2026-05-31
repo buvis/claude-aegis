@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-05-31
+
 ### Added
 
 - **aegis**: `block_suppression_markers.py` now detects more suppression forms - ruff/flake8 file-level disables, pyright and mypy ignores, bandit nosec, and biome-ignore.
