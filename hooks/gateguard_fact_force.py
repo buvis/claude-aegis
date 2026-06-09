@@ -470,33 +470,16 @@ def evaluate(data: dict) -> str | None:
         return deny(edit_gate_msg(file_path) if tool == "Edit" else write_gate_msg(file_path))
 
     if tool == "MultiEdit":
-        edits = tool_input.get("edits") or []
-        unchecked: list[str] = []
-        seen: set[str] = set()
-        for edit in edits:
-            if not isinstance(edit, dict):
-                continue
-            file_path = edit.get("file_path") or ""
-            if (
-                not file_path
-                or file_path in seen
-                or is_claude_settings_path(file_path)
-                or is_working_doc_path(file_path)
-                or is_checked(state_file, file_path)
-            ):
-                continue
-            if transcript_has_read_of(transcript_path, file_path):
-                # Already investigated upstream; mark and skip.
-                mark_checked(state_file, file_path)
-                seen.add(file_path)
-                continue
-            seen.add(file_path)
-            unchecked.append(file_path)
-        if not unchecked:
+        file_path = tool_input.get("file_path") or ""
+        if not file_path or is_claude_settings_path(file_path) or is_working_doc_path(file_path):
             return None
-        for fp in unchecked:
-            mark_checked(state_file, fp)
-        return deny(multiedit_gate_msg(unchecked))
+        if is_checked(state_file, file_path):
+            return None
+        if transcript_has_read_of(transcript_path, file_path):
+            mark_checked(state_file, file_path)
+            return None
+        mark_checked(state_file, file_path)
+        return deny(multiedit_gate_msg([file_path]))
 
     if tool == "Bash":
         command = tool_input.get("command") or ""
