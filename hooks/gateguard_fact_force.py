@@ -357,31 +357,6 @@ def transcript_has_read_of(transcript_path: str, file_path: str, max_bytes: int 
     return False
 
 
-def is_read_only_git(command: str) -> bool:
-    """Allow common read-only git introspection without gating."""
-    trimmed = (command or "").strip()
-    if not trimmed or re.search(r"[\r\n;&|><`$()]", trimmed):
-        return False
-    tokens = trimmed.split()
-    if len(tokens) < 2 or tokens[0] != "git":
-        return False
-    sub = tokens[1].lower()
-    args = tokens[2:]
-    if sub == "status":
-        return all(a in {"--porcelain", "--short", "--branch"} for a in args)
-    if sub == "diff":
-        return len(args) <= 1 and all(a in {"--name-only", "--name-status"} for a in args)
-    if sub == "log":
-        return all(a == "--oneline" or re.fullmatch(r"--max-count=\d+", a) for a in args)
-    if sub == "show":
-        return len(args) == 1 and not args[0].startswith("-") and bool(re.fullmatch(r"[a-zA-Z0-9._:/-]+", args[0]))
-    if sub == "branch":
-        return args == ["--show-current"]
-    if sub == "rev-parse":
-        return len(args) == 2 and args[0] == "--abbrev-ref" and args[1].lower() == "head"
-    return False
-
-
 # --- gate messages ---
 
 def _msg(*lines: str) -> str:
@@ -523,8 +498,6 @@ def _eval_multiedit(tool_input: dict, state_file: Path, transcript_path: str) ->
 def _eval_bash(tool_input: dict, state_file: Path) -> str | None:
     command = tool_input.get("command") or ""
     if not isinstance(command, str):
-        return None
-    if is_read_only_git(command):
         return None
     if _is_destructive(command):
         key = "__destructive__" + hashlib.sha256(command.encode("utf-8")).hexdigest()[:16]
