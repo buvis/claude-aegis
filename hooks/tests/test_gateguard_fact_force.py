@@ -269,16 +269,20 @@ class TestDestructiveBash(GateGuardTestCase):
                 "drop table users",
                 "delete from accounts",
                 "truncate logs",
-                # NOTE: the `dd if=` trigger only fires when `=` is followed by a
-                # word char (the regex ends `dd\s+if=` with `\b`). `dd if=/dev/...`
-                # (leading `/`) is NOT caught -- a pre-existing source quirk,
-                # out of scope for this verbatim port. See task notes.
                 "dd if=backup.img of=disk",
             ]
         ):
             with self.subTest(cmd=cmd):
                 r = self.run_hook(self.bash(cmd, session=f"bt{i}"))
                 self.assertDenied(r)
+
+    def test_dd_absolute_path_denies(self):
+        # Absolute-path form (dd if=/dev/zero of=/dev/sda) must deny, same as
+        # the bareword form. Both forms are asserted here.
+        r_abs = self.run_hook(self.bash("dd if=/dev/zero of=/dev/sda", session="bdd1"))
+        self.assertDenied(r_abs)
+        r_bare = self.run_hook(self.bash("dd if=backup.img of=disk", session="bdd2"))
+        self.assertDenied(r_bare)
 
     def test_plain_bash_allowed(self):
         self.assertAllowed(self.run_hook(self.bash("ls -la /tmp", session="b4")))
