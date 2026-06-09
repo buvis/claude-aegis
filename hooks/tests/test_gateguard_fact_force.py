@@ -142,32 +142,45 @@ class TestWriteGate(GateGuardTestCase):
 
 class TestMultiEditGate(GateGuardTestCase):
     @staticmethod
-    def multiedit(paths, session="m"):
+    def multiedit(file_path, session="m"):
         return {
             "tool_name": "MultiEdit",
-            "tool_input": {"edits": [{"file_path": p} for p in paths]},
+            "tool_input": {
+                "file_path": file_path,
+                "edits": [
+                    {"old_string": "a", "new_string": "b"},
+                    {"old_string": "c", "new_string": "d"},
+                ],
+            },
             "session_id": session,
         }
 
-    def test_batch_single_deny_lists_all_files(self):
-        r = self.run_hook(self.multiedit(["/x.py", "/y.py", "/z.py"], session="m1"))
-        reason = self.assertDenied(r, contains=["MultiEdit batch"])
-        for p in ("/x.py", "/y.py", "/z.py"):
-            self.assertIn(p, reason)
-
-    def test_batch_retry_allows(self):
-        batch = self.multiedit(["/x.py", "/y.py"], session="m2")
-        self.assertDenied(self.run_hook(batch))
-        self.assertAllowed(self.run_hook(batch))
-
-    def test_duplicate_paths_in_batch_dedup(self):
-        r = self.run_hook(self.multiedit(["/dup.py", "/dup.py"], session="m3"))
+    def test_first_multiedit_on_unread_file_denies_and_names_it(self):
+        r = self.run_hook(self.multiedit("/proj/mod.py", session="m1"))
         reason = self.assertDenied(r)
-        # The path is listed once, not twice.
-        self.assertEqual(reason.count("/dup.py"), 1)
+        self.assertIn("/proj/mod.py", reason)
+        self.assertEqual(reason.count("/proj/mod.py"), 1)
 
-    def test_all_exempt_batch_allows(self):
-        r = self.run_hook(self.multiedit(["/x/dev/local/a.md", "/y/notes.txt"], session="m4"))
+    def test_second_multiedit_on_same_target_allows(self):
+        payload = self.multiedit("/proj/mod.py", session="m2")
+        self.assertDenied(self.run_hook(payload))
+        self.assertAllowed(self.run_hook(payload))
+
+    def test_working_doc_target_allows(self):
+        r = self.run_hook(self.multiedit("/proj/dev/local/notes.md", session="m3"))
+        self.assertAllowed(r)
+
+    def test_prior_read_target_allows(self):
+        tpath = self.state_dir / "transcript.jsonl"
+        line = {
+            "message": {
+                "content": [
+                    {"type": "tool_use", "name": "Read", "input": {"file_path": "/proj/mod.py"}}
+                ]
+            }
+        }
+        tpath.write_text(json.dumps(line) + "\n", encoding="utf-8")
+        r = self.run_hook(self.multiedit("/proj/mod.py", session="m4"), transcript_path=str(tpath))
         self.assertAllowed(r)
 
 
