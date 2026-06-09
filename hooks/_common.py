@@ -15,11 +15,13 @@ from typing import Any, NoReturn
 
 
 def read_input() -> dict[str, Any]:
-    """Parse stdin as JSON. Return {} on empty input or parse failure.
+    """Parse stdin as JSON. Return {} on TTY, empty input, or parse failure.
 
     Hooks must remain non-fatal on bad input so a malformed payload never
     blocks an otherwise-valid tool call.
     """
+    if sys.stdin.isatty():
+        return {}
     raw = sys.stdin.read()
     if not raw.strip():
         return {}
