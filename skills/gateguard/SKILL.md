@@ -81,6 +81,4 @@ The hook silently allows:
 
 ## Related
 
-- `block-no-verify` hook - prevents `--no-verify` git flags
-- `protect-config.sh` hook - existing PreToolUse guard for config files
-- `review-with-doubt` skill - skeptical post-implementation review (gateguard is pre-action)
+- `protect_config.py` hook - existing PreToolUse guard for config files
