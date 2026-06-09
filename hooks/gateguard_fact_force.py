@@ -188,6 +188,8 @@ def load_state(state_file: Path) -> dict:
         state = json.loads(state_file.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {"checked": [], "last_active": time.time()}
+    if not isinstance(state, dict):
+        return {"checked": [], "last_active": time.time()}
     last_active = state.get("last_active", 0)
     if time.time() - last_active > SESSION_TIMEOUT_SEC:
         try:
@@ -214,8 +216,11 @@ def _prune_checked(checked: list[str]) -> list[str]:
 def save_state(state_file: Path, state: dict) -> None:
     state["last_active"] = time.time()
     state["checked"] = _prune_checked(state.get("checked", []))
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
-    fd, tmp_path = tempfile.mkstemp(dir=str(STATE_DIR), prefix=state_file.name + ".tmp.")
+    try:
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        fd, tmp_path = tempfile.mkstemp(dir=str(STATE_DIR), prefix=state_file.name + ".tmp.")
+    except OSError:
+        return
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2)
