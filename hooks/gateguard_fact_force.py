@@ -485,7 +485,11 @@ TOOL_MAP = {"edit": "Edit", "write": "Write", "multiedit": "MultiEdit", "bash": 
 def evaluate(data: dict) -> str | None:
     """Return a deny-JSON string if the call should be blocked, else None."""
     raw_tool = data.get("tool_name", "") or ""
+    if not isinstance(raw_tool, str):
+        return None
     tool_input = data.get("tool_input", {}) or {}
+    if not isinstance(tool_input, dict):
+        return None
     tool = TOOL_MAP.get(raw_tool.lower(), raw_tool)
 
     session_key = resolve_session_key(data)
@@ -494,6 +498,8 @@ def evaluate(data: dict) -> str | None:
 
     if tool in {"Edit", "Write"}:
         file_path = tool_input.get("file_path") or ""
+        if not isinstance(file_path, str):
+            return None
         if not file_path or is_claude_settings_path(file_path) or is_working_doc_path(file_path):
             return None
         if is_checked(state_file, file_path):
@@ -509,6 +515,8 @@ def evaluate(data: dict) -> str | None:
 
     if tool == "MultiEdit":
         file_path = tool_input.get("file_path") or ""
+        if not isinstance(file_path, str):
+            return None
         if not file_path or is_claude_settings_path(file_path) or is_working_doc_path(file_path):
             return None
         if is_checked(state_file, file_path):
@@ -521,6 +529,8 @@ def evaluate(data: dict) -> str | None:
 
     if tool == "Bash":
         command = tool_input.get("command") or ""
+        if not isinstance(command, str):
+            return None
         if is_read_only_git(command):
             return None
         if _is_destructive(command):
