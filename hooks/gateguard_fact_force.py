@@ -2,9 +2,9 @@
 """PreToolUse hook — GateGuard fact-forcing gate.
 
 Forces the agent to investigate before editing files or running destructive
-or first-time bash commands. On the first attempt it returns a structured
-deny with a fact list to gather; on the second attempt for the same target
-it allows through.
+bash commands. On the first attempt it returns a structured deny with a fact
+list to gather; on the second attempt for the same target it allows through.
+Non-destructive bash commands are not gated.
 
 State persists per session under $GATEGUARD_STATE_DIR (default
 ~/.claude/cache/gateguard). Sessions expire after 30 minutes of inactivity.
