@@ -11,6 +11,16 @@ State persists per session under $GATEGUARD_STATE_DIR (default
 
 Exit code is always 0; deny is communicated via the JSON envelope on stdout
 (hookSpecificOutput.permissionDecision = "deny").
+
+Concurrency (accepted limitation): mark_checked does an unlocked
+read-modify-write (load_state -> mutate -> atomic os.replace). Concurrent
+same-session gate hits can clobber each other's in-flight "checked" marks. We
+accept this rather than add a lock: the atomic os.replace makes each write
+all-or-nothing, so a state file can never be corrupted; the only possible loss
+is a single in-flight mark, which self-heals on the next gate hit for that
+target (it gates once more, then allows). PreToolUse hooks for one session
+rarely truly race, so an fcntl/lockfile mitigation is not worth its added
+complexity and cleanup burden.
 """
 
 from __future__ import annotations
