@@ -57,6 +57,25 @@ def _strip_quoted(command: str) -> str:
 _SHELL_C_NAMES = {"bash", "sh", "zsh", "dash", "ksh"}
 
 
+def _find_shell_c_payload(tokens: list[str], start: int) -> str | None:
+    """Return the argument to a `-c` flag after a shell token at tokens[start], or None.
+
+    Handles a combined short-flag group ending in `c` (e.g. `-xc`) and an
+    explicit `--` end-of-options token before the payload.
+    """
+    for j in range(start + 1, len(tokens)):
+        tok = tokens[j]
+        is_c = tok == "-c" or (tok.startswith("-") and not tok.startswith("--") and tok.endswith("c"))
+        if is_c:
+            k = j + 1
+            if k < len(tokens) and tokens[k] == "--":
+                k += 1
+            return tokens[k] if k < len(tokens) else None
+        if not tok.startswith("-"):
+            return None
+    return None
+
+
 def _is_destructive(command: str) -> bool:
     """True if the command, or a `<shell> -c <payload>` body within it, is destructive."""
     try:
@@ -64,14 +83,10 @@ def _is_destructive(command: str) -> bool:
     except ValueError:
         tokens = []
     for i, tok in enumerate(tokens):
-        if tok in _SHELL_C_NAMES:
-            for j in range(i + 1, len(tokens)):
-                if tokens[j] == "-c" and j + 1 < len(tokens):
-                    if _is_destructive(tokens[j + 1]):
-                        return True
-                    break
-                if not tokens[j].startswith("-"):
-                    break
+        if os.path.basename(tok) in _SHELL_C_NAMES:
+            payload = _find_shell_c_payload(tokens, i)
+            if payload is not None and _is_destructive(payload):
+                return True
     return bool(DESTRUCTIVE_BASH.search(_strip_quoted(command)))
 
 CLAUDE_SETTINGS_PATH = re.compile(r"(^|/)\.claude/settings(?:\.[^/]+)?\.json$")
