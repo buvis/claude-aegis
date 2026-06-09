@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **aegis**: `gateguard_fact_force.py` hook - a fact-forcing PreToolUse gate that denies the first Edit/Write per target (and destructive Bash commands like `rm -rf`, `git reset --hard`, `git push --force`) with a fact list to gather before retrying, then allows the retry once the same target recurs in the session. Registered on the `Edit|Write|MultiEdit` and `Bash` matchers. Ships with a companion `skills/gateguard/SKILL.md` operator skill (aegis's first bundled skill) that explains how to respond to a `[Fact-Forcing Gate]` denial.
 
+### Fixed
+
+- **aegis**: gateguard now gates `MultiEdit` on the real top-level `file_path` payload. It previously read a per-edit `file_path` the tool never sends, so MultiEdit calls were never gated.
+- **aegis**: gateguard's destructive-Bash detection now catches `dd if=/absolute/path` and destructive payloads inside `bash -c "..."` / `sh -c "..."` (including path-qualified shells like `/bin/bash`, bundled flags like `-xc`, and a `--` before the script), while still allowing quoted search patterns such as `grep -iE 'rm -rf'`.
+- **aegis**: gateguard now fails open (allows, exit 0) on malformed-but-valid-JSON payloads (non-string `tool_name`, non-dict `tool_input`, non-string `file_path` or `command`) and on state-directory IO failures, instead of crashing.
+- **aegis**: shared `_common.read_input()` returns `{}` on an interactive TTY instead of blocking on stdin, so running any hook by hand in a terminal no longer hangs.
+
 ## [0.1.5] - 2026-05-31
 
 ### Added
