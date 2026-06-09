@@ -284,6 +284,41 @@ class TestDestructiveBash(GateGuardTestCase):
         r_bare = self.run_hook(self.bash("dd if=backup.img of=disk", session="bdd2"))
         self.assertDenied(r_bare)
 
+    def test_bash_dash_c_destructive_payload_denies(self):
+        # The destructive command is INSIDE the bash -c quoted body.
+        # A hook that strips all quoted substrings before matching will wrongly allow this.
+        r = self.run_hook(self.bash('bash -c "rm -rf /"', session="bc1"))
+        self.assertDenied(r)
+
+    def test_sh_dash_c_destructive_payload_denies(self):
+        r = self.run_hook(self.bash('sh -c "rm -rf /"', session="bc2"))
+        self.assertDenied(r)
+
+    def test_bash_dash_c_single_quoted_destructive_payload_denies(self):
+        r = self.run_hook(self.bash("bash -c 'git reset --hard HEAD~1'", session="bc3"))
+        self.assertDenied(r)
+
+    def test_grep_quoted_destructive_pattern_allows(self):
+        # The destructive tokens are search DATA inside quotes, not a command.
+        # Must allow — the gate should not false-positive on grep/rg patterns.
+        r = self.run_hook(self.bash("grep -iE 'rm -rf|git reset --hard'", session="bc4"))
+        self.assertAllowed(r)
+
+    def test_bash_dash_c_benign_payload_allows(self):
+        # A non-destructive bash -c body must NOT be denied.
+        # Guards against an over-eager fix that denies every bash -c invocation.
+        r = self.run_hook(self.bash('bash -c "ls -la"', session="bc5"))
+        self.assertAllowed(r)
+
+    def test_bash_dash_c_with_quoted_search_pattern_allows(self):
+        # The destructive token "rm -rf" appears only as DATA inside single quotes
+        # within a grep argument — the bash -c body itself is a benign grep, not a
+        # destructive command. A raw-scan impl wrongly denies this; a correct impl
+        # that re-evaluates the bash -c payload with the same quote-aware allowance
+        # must allow it.
+        r = self.run_hook(self.bash("bash -c \"grep -iE 'rm -rf' f\"", session="bc6"))
+        self.assertAllowed(r)
+
     def test_plain_bash_allowed(self):
         self.assertAllowed(self.run_hook(self.bash("ls -la /tmp", session="b4")))
 
