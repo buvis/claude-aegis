@@ -377,6 +377,38 @@ class TestStatePersistence(GateGuardTestCase):
         # Corrupt state is treated as empty, so the first hit still gates.
         self.assertDenied(self.run_hook(self.edit("/foo.py", session="st4")))
 
+    def test_non_dict_state_json_treated_as_fresh_and_denies(self):
+        # Valid JSON that is not a dict ([], "x", 42) must be treated as an
+        # empty default, so the first edit of an unread file still denies.
+        # A loader that calls .get() on the parsed value will crash here.
+        for i, value in enumerate([[], "x", 42]):
+            with self.subTest(value=value):
+                session = f"st5_{i}"
+                sf = self.state_dir / f"state-{session}.json"
+                sf.write_text(json.dumps(value), encoding="utf-8")
+                r = self.run_hook(self.edit("/foo.py", session=session))
+                self.assertDenied(r)
+
+    def test_state_dir_mkdir_failure_does_not_crash(self):
+        # Point GATEGUARD_STATE_DIR at a path whose parent is a regular file,
+        # so mkdir(parents=True) raises NotADirectoryError (an OSError subclass).
+        # The hook must NOT crash: exit code 0, empty stderr.
+        blocker = self.state_dir / "blocker"
+        blocker.write_bytes(b"x")
+        bad_state_dir = str(blocker / "sub")
+        env = self._env()
+        env["GATEGUARD_STATE_DIR"] = bad_state_dir
+        r = subprocess.run(
+            [sys.executable, str(HOOK)],
+            input=json.dumps(self.edit("/foo.py", session="io1")),
+            capture_output=True,
+            text=True,
+            timeout=5,
+            env=env,
+        )
+        self.assertEqual(r.returncode, 0, f"hook crashed (non-zero exit): stderr={r.stderr!r}")
+        self.assertEqual(r.stderr, "", f"traceback on stderr: {r.stderr!r}")
+
 
 class TestSessionKeyResolution(GateGuardTestCase):
     def test_camelcase_session_id_isolates_state(self):
