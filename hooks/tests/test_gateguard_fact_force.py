@@ -178,7 +178,9 @@ class TestExemptions(GateGuardTestCase):
         self.assertAllowed(r)
 
     def test_prds_wip_dir_exempt(self):
-        r = self.run_hook(self.edit("/proj/dev/local/prds/wip/spec.py", session="x2"))
+        # Path outside dev/local and with a non-doc extension, so only the
+        # /prds/wip/ segment can grant the exemption (isolates that rule).
+        r = self.run_hook(self.edit("/proj/prds/wip/spec.py", session="x2"))
         self.assertAllowed(r)
 
     def test_markdown_extension_exempt(self):
