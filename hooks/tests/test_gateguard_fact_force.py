@@ -421,5 +421,20 @@ class TestMalformedInput(GateGuardTestCase):
         self.assertAllowed(r)
 
 
+class TestMalformedFieldTypes(GateGuardTestCase):
+    def test_wrong_typed_fields_allow_without_crash(self):
+        cases = [
+            ("tool_name is non-string", {"tool_name": 5, "tool_input": {"file_path": "/a.py"}}),
+            ("tool_input is non-dict", {"tool_name": "Edit", "tool_input": "notadict"}),
+            ("file_path is non-string", {"tool_name": "Edit", "tool_input": {"file_path": 42}}),
+            ("command is non-string", {"tool_name": "Bash", "tool_input": {"command": ["x"]}}),
+        ]
+        for label, payload in cases:
+            with self.subTest(case=label):
+                r = self.run_hook(payload)
+                self.assertAllowed(r)
+                self.assertEqual(r.stderr, "", f"traceback on stderr for case {label!r}: {r.stderr}")
+
+
 if __name__ == "__main__":
     unittest.main()
