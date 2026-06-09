@@ -348,6 +348,30 @@ class TestDestructiveBash(GateGuardTestCase):
         self.assertAllowed(self.run_hook(self.bash("git log --oneline", session="b6")))
         self.assertAllowed(self.run_hook(self.bash("git diff --name-only", session="b7")))
 
+    def test_all_readonly_git_forms_allow(self):
+        # Equivalence guard: every read-only git form must ALLOW before and
+        # after the planned removal of the internal early-return short-circuit.
+        readonly_forms = [
+            "git status",
+            "git status --porcelain",
+            "git status --short",
+            "git status --branch",
+            "git diff",
+            "git diff --name-only",
+            "git diff --name-status",
+            "git log",
+            "git log --oneline",
+            "git log --max-count=5",
+            "git show HEAD",
+            "git show 1a2b3c4",
+            "git branch --show-current",
+            "git rev-parse --abbrev-ref HEAD",
+        ]
+        for i, cmd in enumerate(readonly_forms):
+            with self.subTest(cmd=cmd):
+                r = self.run_hook(self.bash(cmd, session=f"rg{i}"))
+                self.assertAllowed(r)
+
 
 class TestStatePersistence(GateGuardTestCase):
     def _write_state(self, session, checked, last_active):
