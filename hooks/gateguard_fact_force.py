@@ -19,6 +19,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import sys
 import tempfile
 import time
@@ -51,6 +52,27 @@ def _strip_quoted(command: str) -> str:
     the destructive regex match only on unquoted shell content.
     """
     return _QUOTED_RE.sub("", command)
+
+
+_SHELL_C_NAMES = {"bash", "sh", "zsh", "dash", "ksh"}
+
+
+def _is_destructive(command: str) -> bool:
+    """True if the command, or a `<shell> -c <payload>` body within it, is destructive."""
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        tokens = []
+    for i, tok in enumerate(tokens):
+        if tok in _SHELL_C_NAMES:
+            for j in range(i + 1, len(tokens)):
+                if tokens[j] == "-c" and j + 1 < len(tokens):
+                    if _is_destructive(tokens[j + 1]):
+                        return True
+                    break
+                if not tokens[j].startswith("-"):
+                    break
+    return bool(DESTRUCTIVE_BASH.search(_strip_quoted(command)))
 
 CLAUDE_SETTINGS_PATH = re.compile(r"(^|/)\.claude/settings(?:\.[^/]+)?\.json$")
 
@@ -486,7 +508,7 @@ def evaluate(data: dict) -> str | None:
         command = tool_input.get("command") or ""
         if is_read_only_git(command):
             return None
-        if DESTRUCTIVE_BASH.search(_strip_quoted(command)):
+        if _is_destructive(command):
             key = "__destructive__" + hashlib.sha256(command.encode("utf-8")).hexdigest()[:16]
             if is_checked(state_file, key):
                 return None
