@@ -487,6 +487,54 @@ def deny(reason: str) -> str:
 TOOL_MAP = {"edit": "Edit", "write": "Write", "multiedit": "MultiEdit", "bash": "Bash"}
 
 
+def _eval_edit_write(tool: str, tool_input: dict, state_file: Path, transcript_path: str) -> str | None:
+    file_path = tool_input.get("file_path") or ""
+    if not isinstance(file_path, str):
+        return None
+    if not file_path or is_claude_settings_path(file_path) or is_working_doc_path(file_path):
+        return None
+    if is_checked(state_file, file_path):
+        return None
+    # Edit on a file already Read this session: investigation already
+    # happened, the gate would just force restating known facts. Mark it
+    # checked so we don't re-scan the transcript on subsequent edits.
+    if tool == "Edit" and transcript_has_read_of(transcript_path, file_path):
+        mark_checked(state_file, file_path)
+        return None
+    mark_checked(state_file, file_path)
+    return deny(edit_gate_msg(file_path) if tool == "Edit" else write_gate_msg(file_path))
+
+
+def _eval_multiedit(tool_input: dict, state_file: Path, transcript_path: str) -> str | None:
+    file_path = tool_input.get("file_path") or ""
+    if not isinstance(file_path, str):
+        return None
+    if not file_path or is_claude_settings_path(file_path) or is_working_doc_path(file_path):
+        return None
+    if is_checked(state_file, file_path):
+        return None
+    if transcript_has_read_of(transcript_path, file_path):
+        mark_checked(state_file, file_path)
+        return None
+    mark_checked(state_file, file_path)
+    return deny(multiedit_gate_msg([file_path]))
+
+
+def _eval_bash(tool_input: dict, state_file: Path) -> str | None:
+    command = tool_input.get("command") or ""
+    if not isinstance(command, str):
+        return None
+    if is_read_only_git(command):
+        return None
+    if _is_destructive(command):
+        key = "__destructive__" + hashlib.sha256(command.encode("utf-8")).hexdigest()[:16]
+        if is_checked(state_file, key):
+            return None
+        mark_checked(state_file, key)
+        return deny(destructive_bash_msg())
+    return None
+
+
 def evaluate(data: dict) -> str | None:
     """Return a deny-JSON string if the call should be blocked, else None."""
     raw_tool = data.get("tool_name", "") or ""
@@ -496,56 +544,15 @@ def evaluate(data: dict) -> str | None:
     if not isinstance(tool_input, dict):
         return None
     tool = TOOL_MAP.get(raw_tool.lower(), raw_tool)
-
     session_key = resolve_session_key(data)
     state_file = _state_file(session_key)
     transcript_path = data.get("transcript_path") or data.get("transcriptPath") or ""
-
     if tool in {"Edit", "Write"}:
-        file_path = tool_input.get("file_path") or ""
-        if not isinstance(file_path, str):
-            return None
-        if not file_path or is_claude_settings_path(file_path) or is_working_doc_path(file_path):
-            return None
-        if is_checked(state_file, file_path):
-            return None
-        # Edit on a file already Read this session: investigation already
-        # happened, the gate would just force restating known facts. Mark it
-        # checked so we don't re-scan the transcript on subsequent edits.
-        if tool == "Edit" and transcript_has_read_of(transcript_path, file_path):
-            mark_checked(state_file, file_path)
-            return None
-        mark_checked(state_file, file_path)
-        return deny(edit_gate_msg(file_path) if tool == "Edit" else write_gate_msg(file_path))
-
+        return _eval_edit_write(tool, tool_input, state_file, transcript_path)
     if tool == "MultiEdit":
-        file_path = tool_input.get("file_path") or ""
-        if not isinstance(file_path, str):
-            return None
-        if not file_path or is_claude_settings_path(file_path) or is_working_doc_path(file_path):
-            return None
-        if is_checked(state_file, file_path):
-            return None
-        if transcript_has_read_of(transcript_path, file_path):
-            mark_checked(state_file, file_path)
-            return None
-        mark_checked(state_file, file_path)
-        return deny(multiedit_gate_msg([file_path]))
-
+        return _eval_multiedit(tool_input, state_file, transcript_path)
     if tool == "Bash":
-        command = tool_input.get("command") or ""
-        if not isinstance(command, str):
-            return None
-        if is_read_only_git(command):
-            return None
-        if _is_destructive(command):
-            key = "__destructive__" + hashlib.sha256(command.encode("utf-8")).hexdigest()[:16]
-            if is_checked(state_file, key):
-                return None
-            mark_checked(state_file, key)
-            return deny(destructive_bash_msg())
-        return None
-
+        return _eval_bash(tool_input, state_file)
     return None
 
 
