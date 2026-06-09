@@ -35,7 +35,8 @@ MAX_SESSION_KEYS = 50
 
 DESTRUCTIVE_BASH = re.compile(
     r"\b(rm\s+-rf|git\s+reset\s+--hard|git\s+checkout\s+--|git\s+clean\s+-f|"
-    r"drop\s+table|delete\s+from|truncate|git\s+push\s+--force|dd\s+if=)\b",
+    r"drop\s+table|delete\s+from|truncate|git\s+push\s+--force)\b"
+    r"|dd\s+if=\S",
     re.IGNORECASE,
 )
 
