@@ -319,6 +319,27 @@ class TestDestructiveBash(GateGuardTestCase):
         r = self.run_hook(self.bash("bash -c \"grep -iE 'rm -rf' f\"", session="bc6"))
         self.assertAllowed(r)
 
+    def test_path_qualified_shell_destructive_payload_denies(self):
+        # Shell referenced by absolute path (/bin/bash, /bin/sh) with -c and a
+        # destructive payload. A hook that only matches the bare name will allow.
+        r_bash = self.run_hook(self.bash('/bin/bash -c "rm -rf /"', session="bc7"))
+        self.assertDenied(r_bash)
+        r_sh = self.run_hook(self.bash('/bin/sh -c "rm -rf /"', session="bc8"))
+        self.assertDenied(r_sh)
+
+    def test_combined_short_flags_destructive_payload_denies(self):
+        # -c bundled with another short flag (e.g. -xc). The payload is the next
+        # positional argument after the combined flag, not after a standalone -c.
+        r_bash = self.run_hook(self.bash("bash -xc 'rm -rf /'", session="bc9"))
+        self.assertDenied(r_bash)
+        r_sh = self.run_hook(self.bash("sh -ec 'git reset --hard HEAD~1'", session="bc10"))
+        self.assertDenied(r_sh)
+
+    def test_dash_dash_before_payload_destructive_denies(self):
+        # An explicit -- end-of-options token sits between -c and the payload.
+        r = self.run_hook(self.bash('bash -c -- "rm -rf /"', session="bc11"))
+        self.assertDenied(r)
+
     def test_plain_bash_allowed(self):
         self.assertAllowed(self.run_hook(self.bash("ls -la /tmp", session="b4")))
 
