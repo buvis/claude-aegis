@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **aegis**: `gateguard_fact_force.py` hook - a fact-forcing PreToolUse gate that denies the first Edit/Write per target (and destructive Bash commands like `rm -rf`, `git reset --hard`, `git push --force`) with a fact list to gather before retrying, then allows the retry once the same target recurs in the session. Registered on the `Edit|Write|MultiEdit` and `Bash` matchers. Ships with a companion `skills/gateguard/SKILL.md` operator skill (aegis's first bundled skill) that explains how to respond to a `[Fact-Forcing Gate]` denial.
+
 ## [0.1.5] - 2026-05-31
 
 ### Added
