@@ -8,7 +8,7 @@
     {
       "name": "aegis",
       "description": "Eight PreToolUse hooks: prefer tools over bash, block dev/local redirects, block suppression markers, protect linter configs, validate commit messages, block task-completion poll loops, block automatic force pushes, and a fact-forcing gate before first edits and destructive bash.",
-      "version": "0.1.5",
+      "version": "0.2.0",
       "author": {
         "name": "buvis"
       },
