@@ -2,10 +2,10 @@
 
 Hard deny (exit 2) when any segment of a Bash command invokes one of
 `grep|find|cat|head|tail` - either as a standalone command or inside a
-pipe/chain/subshell. The model has dedicated Grep/Glob/Read tools that are
-faster, cheaper, and produce structured output. `Grep` accepts `head_limit`
-and `output_mode`, `Read` accepts `offset`/`limit`, so the common pipe
-patterns (`grep ... | head`, `cat file | jq`) have first-class replacements.
+pipe/chain/subshell. `cat|head|tail` have a dedicated Read tool (`offset`/
+`limit`). The native Grep/Glob tools are unavailable in this build (an upstream
+native-build bug), so `grep`/`find` route to `rg` for a targeted search or the
+`Explore` agent for broad fan-out, not to Grep/Glob.
 
 `rg` is allowed (faster than grep, respects .gitignore).
 `jq` is allowed; the right replacement for `cat file | jq '...'` is
@@ -19,11 +19,18 @@ import re
 from _common import allow, block, read_input
 
 DENY = {
-    "grep": "Grep (supports head_limit, output_mode, glob filters)",
-    "find": "Glob",
-    "cat": "Read (or pass the filename directly to the next tool, e.g. `jq '...' file`)",
-    "head": "Read with offset/limit (or Grep's head_limit)",
-    "tail": "Read with offset/limit",
+    "grep": (
+        "Use `rg` for a targeted search, or the `Explore` agent for a broad "
+        "fan-out across many files. The native Grep tool is unavailable in this build."
+    ),
+    "find": (
+        "Use `rg --files` (add `-g <glob>` to filter) to locate files, or the "
+        "`Explore` agent for a broad search. The native Glob tool is unavailable "
+        "in this build."
+    ),
+    "cat": "Use the Read tool, or pass the filename straight to the next tool (e.g. `jq '...' file`).",
+    "head": "Use the Read tool with offset/limit.",
+    "tail": "Use the Read tool with offset/limit.",
 }
 
 # Quoted spans are data, not commands. Strip them before splitting so a denied
@@ -80,11 +87,9 @@ def main() -> None:
         target = DENY.get(first)
         if target:
             block(
-                f"Blocked: use the {target} tool instead of bash `{first}`. "
-                f"It is faster, returns structured output, and respects file ignores. "
-                f"This applies inside pipes/chains too: `grep ... | head` -> Grep with "
-                f"head_limit; `cat file | jq '...'` -> `jq '...' file`. "
-                f"Policy: aegis/rules/tools.md."
+                f"Blocked bash `{first}`. {target} "
+                f"This applies inside pipes, chains, and subshells too "
+                f"(e.g. `{first} ... | other`). Policy: aegis/rules/tools.md."
             )
     allow()
 

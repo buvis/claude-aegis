@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **aegis**: gateguard's destructive-Bash detection now catches `dd if=/absolute/path` and destructive payloads inside `bash -c "..."` / `sh -c "..."` (including path-qualified shells like `/bin/bash`, bundled flags like `-xc`, and a `--` before the script), while still allowing quoted search patterns such as `grep -iE 'rm -rf'`.
 - **aegis**: gateguard now fails open (allows, exit 0) on malformed-but-valid-JSON payloads (non-string `tool_name`, non-dict `tool_input`, non-string `file_path` or `command`) and on state-directory IO failures, instead of crashing.
 - **aegis**: shared `_common.read_input()` returns `{}` on an interactive TTY instead of blocking on stdin, so running any hook by hand in a terminal no longer hangs.
+- **aegis**: `prefer_tools.py` now routes blocked `grep`/`find` to `rg` (targeted search) or the `Explore` agent (broad fan-out) instead of the native `Grep`/`Glob` tools, which are unregistered in current native builds; the previous message told agents to use a tool that does not exist.
 
 ## [0.1.5] - 2026-05-31
 

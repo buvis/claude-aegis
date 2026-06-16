@@ -25,14 +25,18 @@ def run_hook(cmd: str | None) -> subprocess.CompletedProcess[str]:
 
 class TestBlocks(unittest.TestCase):
     def test_blocks_bare_grep(self) -> None:
+        # Routes to the live alternatives, not the unregistered Grep tool.
         r = run_hook("grep -r foo .")
         self.assertEqual(r.returncode, 2)
-        self.assertIn("Grep", r.stderr)
+        self.assertIn("`rg`", r.stderr)
+        self.assertIn("Explore", r.stderr)
 
     def test_blocks_bare_find(self) -> None:
+        # Routes to the live alternatives, not the unregistered Glob tool.
         r = run_hook("find . -name '*.py'")
         self.assertEqual(r.returncode, 2)
-        self.assertIn("Glob", r.stderr)
+        self.assertIn("`rg --files`", r.stderr)
+        self.assertIn("Explore", r.stderr)
 
     def test_blocks_bare_cat(self) -> None:
         r = run_hook("cat file")
@@ -51,7 +55,7 @@ class TestBlocks(unittest.TestCase):
         # The documented pipe case: blocks on the first denied binary.
         r = run_hook("grep foo f | head")
         self.assertEqual(r.returncode, 2)
-        self.assertIn("Grep", r.stderr)
+        self.assertIn("`rg`", r.stderr)
 
     def test_blocks_cat_before_jq(self) -> None:
         r = run_hook("cat f | jq '.'")
@@ -70,7 +74,7 @@ class TestBlocks(unittest.TestCase):
         # xargs is the one documented wrapper; its argument is the real command.
         r = run_hook("xargs grep foo")
         self.assertEqual(r.returncode, 2)
-        self.assertIn("Grep", r.stderr)
+        self.assertIn("`rg`", r.stderr)
 
     def test_blocks_xargs_with_flag_then_cat(self) -> None:
         r = run_hook("xargs -r cat")
