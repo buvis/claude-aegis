@@ -340,6 +340,57 @@ class TestDestructiveBash(GateGuardTestCase):
         r = self.run_hook(self.bash('bash -c -- "rm -rf /"', session="bc11"))
         self.assertDenied(r)
 
+    def test_option_with_operand_before_dash_c_destructive_denies(self):
+        # An option that takes an operand (e.g. -O extglob) sits before -c.
+        # The scan must not stop at the first non-flag token (extglob/foo) and
+        # wrongly allow the destructive payload behind -c.
+        r_rm = self.run_hook(self.bash('bash -O extglob -c "rm -rf /"', session="bc12"))
+        self.assertDenied(r_rm)
+        r_git = self.run_hook(
+            self.bash('bash -O foo -c "git reset --hard HEAD~1"', session="bc13")
+        )
+        self.assertDenied(r_git)
+
+    def test_option_with_operand_before_dash_c_benign_allows(self):
+        # Same option-with-operand form, but a benign payload behind -c.
+        # Guards against an over-eager fix that denies every option form.
+        r = self.run_hook(self.bash('bash -O extglob -c "ls -la"', session="bc14"))
+        self.assertAllowed(r)
+
+    def test_long_operand_flag_before_dash_c_destructive_denies(self):
+        # A long option that takes a separate file operand (--rcfile FILE) sits
+        # before -c; the operand must not be mistaken for the script positional.
+        r = self.run_hook(self.bash('bash --rcfile /tmp/x -c "rm -rf /"', session="bc16"))
+        self.assertDenied(r)
+
+    def test_long_operand_flag_before_dash_c_benign_allows(self):
+        r = self.run_hook(self.bash('bash --rcfile /tmp/x -c "ls -la"', session="bc17"))
+        self.assertAllowed(r)
+
+    def test_deeply_nested_bash_dash_c_does_not_crash(self):
+        # A destructive command wrapped in many layers of bash -c "bash -c ..."
+        # must NOT crash the hook regardless of how depth is handled. Assert only
+        # that the hook does not crash (exit 0, empty stderr), like the raw-form
+        # test_state_dir_mkdir_failure_does_not_crash. No deny-vs-allow claim.
+        # 8 layers is plenty to exercise nested-payload handling. Depth must stay
+        # small: each layer double-escapes the previous one, so the string length
+        # grows ~2x per iteration. A large range (e.g. 60) builds a ~2^60-byte
+        # string that OOMs the test process before the hook is ever invoked.
+        command = "rm -rf /"
+        for _ in range(8):
+            escaped = command.replace("\\", "\\\\").replace('"', '\\"')
+            command = f'bash -c "{escaped}"'
+        r = subprocess.run(
+            [sys.executable, str(HOOK)],
+            input=json.dumps(self.bash(command, session="bc15")),
+            capture_output=True,
+            text=True,
+            timeout=5,
+            env=self._env(),
+        )
+        self.assertEqual(r.returncode, 0, f"hook crashed (non-zero exit): stderr={r.stderr!r}")
+        self.assertEqual(r.stderr, "", f"traceback on stderr: {r.stderr!r}")
+
     def test_plain_bash_allowed(self):
         self.assertAllowed(self.run_hook(self.bash("ls -la /tmp", session="b4")))
 

@@ -67,22 +67,36 @@ def _strip_quoted(command: str) -> str:
 _SHELL_C_NAMES = {"bash", "sh", "zsh", "dash", "ksh"}
 
 
+# Invocation flags that take a separate-token operand. Their operand must not
+# be mistaken for the script positional that ends the option scan, or a later
+# `-c` payload slips through (e.g. `bash -O extglob -c "rm -rf /"`).
+_OPERAND_FLAGS = frozenset({"-O", "+O", "--rcfile", "--init-file"})
+
+
 def _find_shell_c_payload(tokens: list[str], start: int) -> str | None:
     """Return the argument to a `-c` flag after a shell token at tokens[start], or None.
 
-    Handles a combined short-flag group ending in `c` (e.g. `-xc`) and an
-    explicit `--` end-of-options token before the payload.
+    Handles a combined short-flag group ending in `c` (e.g. `-xc`), an explicit
+    `--` end-of-options token before the payload, and option flags that take a
+    separate operand (`-O extglob`, `--rcfile FILE`) whose operand would
+    otherwise look like the script positional that ends the scan.
     """
-    for j in range(start + 1, len(tokens)):
+    j = start + 1
+    n = len(tokens)
+    while j < n:
         tok = tokens[j]
         is_c = tok == "-c" or (tok.startswith("-") and not tok.startswith("--") and tok.endswith("c"))
         if is_c:
             k = j + 1
-            if k < len(tokens) and tokens[k] == "--":
+            if k < n and tokens[k] == "--":
                 k += 1
-            return tokens[k] if k < len(tokens) else None
+            return tokens[k] if k < n else None
+        if tok in _OPERAND_FLAGS and j + 1 < n and not tokens[j + 1].startswith("-"):
+            j += 2  # skip the flag and its operand
+            continue
         if not tok.startswith("-"):
             return None
+        j += 1
     return None
 
 
