@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-08
+
 ### Fixed
 
 - **aegis**: `prefer_tools.py`'s `head`/`tail` deny message no longer suggests only the Read tool, which cannot read a process's stdout. For `cmd | head/tail` it now routes to running the command bare (Bash truncates long output) or redirecting to a file and Reading that, so a blocked agent recovers in one step instead of guessing.
