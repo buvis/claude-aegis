@@ -18,6 +18,7 @@ Pipe patterns have first-class replacements:
 - `grep ... | head` → `Grep` with `head_limit`
 - `cat file | jq '...'` → `jq '...' file`
 - `find ... | xargs y` → `Glob`, then call `y` per file
+- `cmd | head` / `cmd | tail` (trimming command output, no file involved) → run `cmd` bare (the Bash tool already truncates long output), or redirect to a file (`cmd > /tmp/x.log`) and `Read` it with `offset`/`limit`
 
 `rg` for ad-hoc shell recon is allowed (faster than grep, respects `.gitignore`). For code search inside the model, prefer `Grep`.
 

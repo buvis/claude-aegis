@@ -29,8 +29,16 @@ DENY = {
         "in this build."
     ),
     "cat": "Use the Read tool, or pass the filename straight to the next tool (e.g. `jq '...' file`).",
-    "head": "Use the Read tool with offset/limit.",
-    "tail": "Use the Read tool with offset/limit.",
+    "head": (
+        "On a file, use the Read tool with offset/limit. On command output "
+        "(`cmd | head`), run the command bare (the Bash tool already truncates "
+        "long output), or redirect to a file and Read that."
+    ),
+    "tail": (
+        "On a file, use the Read tool with offset/limit. On command output "
+        "(`cmd | tail`), run the command bare (the Bash tool already truncates "
+        "long output), or redirect to a file and Read that."
+    ),
 }
 
 # Quoted spans are data, not commands. Strip them before splitting so a denied

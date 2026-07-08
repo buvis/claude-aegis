@@ -51,6 +51,14 @@ class TestBlocks(unittest.TestCase):
         r = run_hook("tail file")
         self.assertEqual(r.returncode, 2)
 
+    def test_piped_tail_message_offers_applicable_fix(self) -> None:
+        # `uv sync 2>&1 | tail -20` has no file for Read to open; the message
+        # must route to running the command bare or redirecting to a file.
+        r = run_hook("uv sync 2>&1 | tail -20")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("run the command bare", r.stderr)
+        self.assertIn("redirect to a file", r.stderr)
+
     def test_blocks_grep_piped_to_head(self) -> None:
         # The documented pipe case: blocks on the first denied binary.
         r = run_hook("grep foo f | head")
