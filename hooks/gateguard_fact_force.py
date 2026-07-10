@@ -118,6 +118,9 @@ CLAUDE_SETTINGS_PATH = re.compile(r"(^|/)\.claude/settings(?:\.[^/]+)?\.json$")
 # Working-doc exemptions: paths where the gate's questions ("list importers",
 # "public functions affected") are inapplicable, so gating just trains the
 # model to fabricate empty answers.
+# Temp/scratch segments (tmp, var/folders, session scratchpads) are throwaway
+# by definition; gating them produced consecutive-deny retry storms (14x Write
+# in one observed session) with zero investigative signal.
 _WORKING_DOC_DIR_SEGMENTS = (
     "/dev/local/",
     "/.claude/plans/",
@@ -128,6 +131,9 @@ _WORKING_DOC_DIR_SEGMENTS = (
     "/prds/backlog/",
     "/prds/wip/",
     "/prds/done/",
+    "/tmp/",
+    "/var/folders/",
+    "/scratchpad/",
 )
 
 _WORKING_DOC_EXTENSIONS = (".md", ".markdown", ".txt", ".rst")

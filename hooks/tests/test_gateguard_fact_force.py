@@ -215,6 +215,39 @@ class TestExemptions(GateGuardTestCase):
         r = self.run_hook(self.edit("/proj/.gitignore", session="x7"))
         self.assertAllowed(r)
 
+    def test_session_scratchpad_write_exempt(self):
+        # Temp/scratch paths are throwaway; gating them only causes retry
+        # storms (regression: 14 consecutive Write denials on scratchpad files).
+        r = self.run_hook(
+            self.edit(
+                "/private/tmp/claude-501/-Users-bob--claude/abc123/scratchpad/driver.py",
+                session="x8",
+                tool="Write",
+            )
+        )
+        self.assertAllowed(r)
+
+    def test_tmp_dir_code_exempt(self):
+        r = self.run_hook(self.edit("/tmp/probe/main.py", session="x9"))
+        self.assertAllowed(r)
+
+    def test_var_folders_exempt(self):
+        r = self.run_hook(
+            self.edit("/private/var/folders/m6/x/T/tmp.abc/script.sh", session="x10", tool="Write")
+        )
+        self.assertAllowed(r)
+
+    def test_relative_tmp_dir_exempt(self):
+        r = self.run_hook(self.edit("/repo/tmp/fixture_gen.py", session="x11", tool="Write"))
+        self.assertAllowed(r)
+
+    def test_tmp_substring_does_not_match(self):
+        # "tmpfile.py" and "mytmp/" must NOT match the "/tmp/" segment.
+        r = self.run_hook(self.edit("/repo/src/tmpfile.py", session="x12"))
+        self.assertDenied(r)
+        r = self.run_hook(self.edit("/repo/mytmp/helper.py", session="x13"))
+        self.assertDenied(r)
+
 
 class TestPriorReadSkip(GateGuardTestCase):
     def _transcript(self, file_path):
