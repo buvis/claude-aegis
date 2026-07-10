@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-07-10
+
 ### Fixed
 
 - **aegis**: gateguard no longer gates temp/scratch paths (`/tmp/`, `/var/folders/`, session `scratchpad/` dirs, relative `tmp/`). Throwaway files have no importers or consumers to investigate, and gating them produced consecutive-deny retry storms (observed 14 Write denials in a row in one session) with zero signal.
