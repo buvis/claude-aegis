@@ -25,6 +25,7 @@ complexity and cleanup burden.
 
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 import json
 import os
@@ -342,6 +343,27 @@ def is_working_doc_path(file_path: str) -> bool:
     return any(seg in padded for seg in _WORKING_DOC_DIR_SEGMENTS)
 
 
+def _exempt_globs() -> tuple[str, ...]:
+    raw = os.environ.get("GATEGUARD_EXEMPT_GLOBS", "")
+    return tuple(p.strip() for p in raw.split(",") if p.strip())
+
+
+def is_exempt_path(file_path: str) -> bool:
+    """Return True when GATEGUARD_EXEMPT_GLOBS exempts this path.
+
+    Comma-separated fnmatch patterns matched against the forward-slash form of
+    the path, for trees where the gate's questions carry no signal (generated
+    code, vendored deps). fnmatch's `*` also crosses directory separators, so
+    `*/generated/*` matches at any depth, and fnmatch never raises on a
+    malformed pattern, so operator input cannot crash the gate. Unset or empty
+    means no exemptions.
+    """
+    if not file_path:
+        return False
+    normalized = file_path.replace("\\", "/")
+    return any(fnmatch.fnmatch(normalized, pattern) for pattern in _exempt_globs())
+
+
 def transcript_has_read_of(transcript_path: str, file_path: str, max_bytes: int = 200_000) -> bool:
     """Return True if a prior assistant turn issued a Read tool_use against
     file_path. Scans only the trailing max_bytes of the JSONL to bound latency.
@@ -496,7 +518,12 @@ def _eval_edit_write(tool: str, tool_input: dict, state_file: Path, transcript_p
     file_path = tool_input.get("file_path") or ""
     if not isinstance(file_path, str):
         return None
-    if not file_path or is_claude_settings_path(file_path) or is_working_doc_path(file_path):
+    if (
+        not file_path
+        or is_claude_settings_path(file_path)
+        or is_working_doc_path(file_path)
+        or is_exempt_path(file_path)
+    ):
         return None
     if is_checked(state_file, file_path):
         return None
@@ -514,7 +541,12 @@ def _eval_multiedit(tool_input: dict, state_file: Path, transcript_path: str) ->
     file_path = tool_input.get("file_path") or ""
     if not isinstance(file_path, str):
         return None
-    if not file_path or is_claude_settings_path(file_path) or is_working_doc_path(file_path):
+    if (
+        not file_path
+        or is_claude_settings_path(file_path)
+        or is_working_doc_path(file_path)
+        or is_exempt_path(file_path)
+    ):
         return None
     if is_checked(state_file, file_path):
         return None

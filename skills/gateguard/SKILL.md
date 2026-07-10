@@ -19,6 +19,8 @@ The hook lives at `${CLAUDE_PLUGIN_ROOT}/hooks/gateguard_fact_force.py` and is r
 
 State persists per session under `~/.claude/cache/gateguard/state-<session>.json` (auto-prunes after 30 minutes; override with `GATEGUARD_STATE_DIR`).
 
+Operator exemptions: set `GATEGUARD_EXEMPT_GLOBS` to comma-separated fnmatch patterns (e.g. `*/generated/*,*/vendor/*`) to skip the Edit/Write/MultiEdit gate for matching paths. `*` crosses directory separators; unset means no exemptions.
+
 ## Gate Types
 
 ### Edit Gate (first edit per file)

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **aegis**: gateguard honors `GATEGUARD_EXEMPT_GLOBS` - comma-separated fnmatch patterns that exempt matching paths from the Edit/Write/MultiEdit fact-forcing gate (generated code, vendored trees, and other targets where the fact list carries no signal). Ported from upstream ECC gateguard.
+
 ## [0.2.2] - 2026-07-10
 
 ### Fixed

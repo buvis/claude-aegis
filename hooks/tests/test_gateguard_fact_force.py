@@ -37,6 +37,8 @@ class GateGuardTestCase(unittest.TestCase):
 
     def _env(self) -> dict:
         env = {k: v for k, v in os.environ.items() if k not in _SESSION_ENV}
+        # Exemptions must come only from the test, never the outer shell.
+        env.pop("GATEGUARD_EXEMPT_GLOBS", None)
         env["GATEGUARD_STATE_DIR"] = str(self.state_dir)
         return env
 
@@ -247,6 +249,63 @@ class TestExemptions(GateGuardTestCase):
         self.assertDenied(r)
         r = self.run_hook(self.edit("/repo/mytmp/helper.py", session="x13"))
         self.assertDenied(r)
+
+
+class TestOperatorExemptGlobs(GateGuardTestCase):
+    """GATEGUARD_EXEMPT_GLOBS: operator-supplied fnmatch path exemptions."""
+
+    def run_hook_with_globs(self, globs: str, payload: dict):
+        env = self._env()
+        env["GATEGUARD_EXEMPT_GLOBS"] = globs
+        return subprocess.run(
+            [sys.executable, str(HOOK)],
+            input=json.dumps(payload),
+            capture_output=True,
+            text=True,
+            timeout=5,
+            env=env,
+        )
+
+    def test_matching_glob_exempts_edit(self):
+        r = self.run_hook_with_globs(
+            "*/generated/*", self.edit("/proj/src/generated/api.py", session="g1")
+        )
+        self.assertAllowed(r)
+
+    def test_non_matching_path_still_gated(self):
+        r = self.run_hook_with_globs(
+            "*/generated/*", self.edit("/proj/src/handwritten/api.py", session="g2")
+        )
+        self.assertDenied(r)
+
+    def test_second_of_multiple_globs_matches(self):
+        r = self.run_hook_with_globs(
+            "*/vendor/*, */migrations/*",
+            self.edit("/proj/db/migrations/0042_add_index.py", session="g3"),
+        )
+        self.assertAllowed(r)
+
+    def test_blank_entries_ignored(self):
+        # Stray commas and whitespace-only entries must not become
+        # match-everything patterns.
+        r = self.run_hook_with_globs(" , ,", self.edit("/proj/src/core.py", session="g4"))
+        self.assertDenied(r)
+
+    def test_unset_var_gates_normally(self):
+        r = self.run_hook(self.edit("/proj/src/core.py", session="g5"))
+        self.assertDenied(r)
+
+    def test_exempts_write_and_multiedit(self):
+        r = self.run_hook_with_globs(
+            "*/generated/*",
+            self.edit("/proj/gen/generated/x.py", session="g6", tool="Write"),
+        )
+        self.assertAllowed(r)
+        r = self.run_hook_with_globs(
+            "*/generated/*",
+            self.edit("/proj/gen/generated/y.py", session="g7", tool="MultiEdit"),
+        )
+        self.assertAllowed(r)
 
 
 class TestPriorReadSkip(GateGuardTestCase):
