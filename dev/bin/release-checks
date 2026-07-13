@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Pre-release checks for aegis (hook-only plugin: no skills/ to validate).
+# Run by claude-plugins/scripts/release-plugin with CWD = repo root.
+set -euo pipefail
+
+if find hooks -name 'test_*.py' -print -quit 2>/dev/null | grep -q .; then
+  test_dirs=$(find hooks -name 'test_*.py' -exec dirname {} \; | sort -u)
+  for d in $test_dirs; do
+    (cd "$d" && python3 -m unittest discover -s . -p 'test_*.py')
+  done
+fi

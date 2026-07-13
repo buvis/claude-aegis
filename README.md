@@ -57,6 +57,20 @@ The aegis is the shield of Zeus, lent to Athena and Apollo. Single piece of defe
 
 Like the original, it's prophylactic. You won't see it work — you'll just notice the bad patterns never land.
 
+## Releasing
+
+`dev/bin/release [patch|minor|major]` is a thin shim. The shared release
+script lives in the central marketplace repo,
+[buvis/claude-plugins](https://github.com/buvis/claude-plugins), and every
+release also bumps this plugin's entry there. Developing this plugin
+therefore needs that repo cloned beside this one:
+
+```bash
+git clone git@github.com:buvis/claude-plugins.git ../claude-plugins
+```
+
+Repo-specific pre-release checks live in `dev/bin/release-checks`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
