@@ -28,7 +28,7 @@ Operator exemptions: set `GATEGUARD_EXEMPT_GLOBS` to comma-separated fnmatch pat
 Code files (`.py`, `.ts`, `.rs`, `.go`, `.svelte`, …):
 
 ```
-1. List ALL files that import/require this file (use Grep)
+1. List ALL files that import/require this file (use `rg -n`)
 2. List the public functions/classes affected by this change
 3. If this file reads/writes data files, show field names, structure,
    and date format (use redacted or synthetic values, not raw production data)
@@ -37,7 +37,7 @@ Code files (`.py`, `.ts`, `.rs`, `.go`, `.svelte`, …):
 Config / data files (`.yaml`, `.json`, `.toml`, `.css`, `.sql`, …):
 
 ```
-1. List ALL code or tooling that consumes this file (use Grep)
+1. List ALL code or tooling that consumes this file (use `rg -n`)
 2. Show the expected fields/structure (or schema reference)
 ```
 
@@ -72,13 +72,13 @@ The hook silently allows:
 ## How to Respond When Gated
 
 1. Do not attempt the action again immediately.
-2. Run the requested investigation (Grep for importers/consumers, Glob for duplicates, Read for schemas).
+2. Run the requested investigation (`rg -n` for importers/consumers, `rg --files` for duplicates, Read for schemas).
 3. Present the facts as a brief list in your reply.
 4. Then retry the original tool call. The second attempt is allowed.
 
 ## Anti-Patterns
 
-- **Don't pre-answer the gate questions.** The investigation itself is what improves quality - guessing the answers without running Grep/Read defeats the mechanism.
+- **Don't pre-answer the gate questions.** The investigation itself is what improves quality - guessing the answers without running rg/Read defeats the mechanism.
 - **Don't try to bypass the gate** by editing settings to disable the hook. If the gate is consistently wrong for a workflow, surface it and tune the rules.
 
 ## Related

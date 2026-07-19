@@ -10,17 +10,17 @@ Any segment of a Bash command that starts with one of these binaries is denied. 
 |---|---|---|
 | `cat file` | `Read` (or pass the filename directly: `jq '...' file`) | Returns line-numbered output, respects size limits |
 | `head -n file` / `tail -n file` | `Read` with `offset` / `limit` | Same |
-| `grep -r pattern path` | `Grep` (supports `head_limit`, `output_mode`, glob filters) | Faster, respects ignores, structured output |
-| `find path -name "*.x"` | `Glob` | Designed for filename patterns |
+| `grep -r pattern path` | `rg -n pattern path` (or the `Explore` agent for broad sweeps) | Faster, respects ignores |
+| `find path -name "*.x"` | `rg --files path -g '*.x'` | Same speed and ignore behavior for filename patterns |
 
 Pipe patterns have first-class replacements:
 
-- `grep ... | head` → `Grep` with `head_limit`
+- `grep ... | head` → `rg -m <N> pattern path` (caps matches per file)
 - `cat file | jq '...'` → `jq '...' file`
-- `find ... | xargs y` → `Glob`, then call `y` per file
+- `find ... | xargs y` → `rg --files -g '<glob>'`, then call `y` per file
 - `cmd | head` / `cmd | tail` (trimming command output, no file involved) → run `cmd` bare (the Bash tool already truncates long output), or redirect to a file (`cmd > /tmp/x.log`) and `Read` it with `offset`/`limit`
 
-`rg` for ad-hoc shell recon is allowed (faster than grep, respects `.gitignore`). For code search inside the model, prefer `Grep`.
+`rg` for ad-hoc shell recon is allowed (faster than grep, respects `.gitignore`). The native Grep/Glob tools are unregistered in some builds; `rg` works everywhere.
 
 # Don't Hand-Roll Task-Completion Poll Loops
 
@@ -43,6 +43,6 @@ That shape is a hand-rolled wait for a background task to finish. It is wrong tw
 
 ## Use instead
 
-`TaskOutput(task_id, block=true, timeout=600000)` blocks until the task completes or the deadline (600000 ms = 10 min, the max per call) and returns status. Then `Read` the task's output file.
+Background tasks notify on completion; wait for the task-notification, then `Read` the task's output file. (`TaskOutput` still exists but is deprecated in current builds.)
 
 The scope is deliberately tight: it catches task-completion polling, not every loop. A legitimate `Monitor` poll loop (`while true` polling a remote API, or emitting a metric with no completion `break`) is not affected.

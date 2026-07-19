@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **aegis**: gateguard deny messages, the gateguard recovery skill, and `rules/tools.md` now point at tools that exist everywhere (`rg -n`, `rg --files`, Explore agent) instead of the native Grep/Glob tools, which are unregistered in some builds - and whose Bash fallback (`grep`) aegis itself denies. Also retires the deprecated `TaskOutput` recommendation in favor of task-notification + Read.
+
 ## [0.3.0] - 2026-07-12
 
 ### Added
