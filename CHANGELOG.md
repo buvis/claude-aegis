@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **aegis**: `rules/working-documents.md` now describes the layout that is actually enforced. `dev/local/meta/` is named as the keepers' canonical home (root holds compat symlinks that retire with `~/.claude` PRD 00139), `agoge-profile.md` joins the keeper list, the write-time enforcement by `enforce_prd_location.py` is stated, `prds/` lifecycle subdirs and the `hold/` state are covered, and the GC horizons are corrected (tmp 7d in flight / 3d idle, unrecognized top-level dirs 7d). Drops the false claim that a new top-level dir is "kept-but-unclassified forever".
+
 ## [0.3.1] - 2026-07-19
 
 ### Fixed
