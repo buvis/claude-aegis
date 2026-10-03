@@ -65,7 +65,7 @@ Non-destructive Bash is no longer gated. Run `ls`, `pwd`, test runners, etc. wit
 The hook silently allows:
 
 - edits to `.claude/settings*.json` files (avoid recursion when configuring hooks)
-- working-doc paths: `dev/local/`, `~/.claude/plans|projects|scratch|sessions|cache/`, PRD `backlog|wip|done/`, plus `.md`, `.txt`, `.rst`, `.gitignore`, `.env.example`
+- working-doc paths: `docs/dev/project-management/`, `~/.claude/plans|projects|scratch|sessions|cache/`, PRD `backlog|wip|done/`, plus `.md`, `.txt`, `.rst`, `.gitignore`, `.env.example`
 - read-only git introspection: `git status --porcelain`, `git diff --name-only`, `git log --oneline`, `git show <ref>`, `git branch --show-current`, `git rev-parse --abbrev-ref HEAD`
 - **Edit on a file already Read in this conversation** — if the transcript shows a prior `Read` tool_use against the same `file_path`, the gate skips. The investigation already happened.
 

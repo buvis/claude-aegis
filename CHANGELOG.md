@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **working documents**: enforce tracked durable artifacts in
+  `docs/dev/project-management/` and disposable assets in `docs/dev/tmp/`;
+  rename the redirect hook accordingly.
+
 ## [0.3.2] - 2026-08-26
 
 ### Changed

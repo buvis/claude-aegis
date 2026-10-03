@@ -1,4 +1,4 @@
-"""Tests for hooks/block_devlocal_redirects.py."""
+"""Tests for hooks/block_working_document_redirects.py."""
 
 import json
 import subprocess
@@ -6,7 +6,7 @@ import sys
 import unittest
 from pathlib import Path
 
-HOOK = Path(__file__).resolve().parents[1] / "block_devlocal_redirects.py"
+HOOK = Path(__file__).resolve().parents[1] / "block_working_document_redirects.py"
 
 
 def run_hook(cmd: str | None) -> subprocess.CompletedProcess[str]:
@@ -25,48 +25,56 @@ def run_hook(cmd: str | None) -> subprocess.CompletedProcess[str]:
 
 class TestBlocks(unittest.TestCase):
     def test_blocks_single_gt_redirect(self) -> None:
-        r = run_hook("echo foo > dev/local/x.md")
+        r = run_hook("echo foo > docs/dev/project-management/x.md")
         self.assertEqual(r.returncode, 2)
         self.assertIn("shell redirect", r.stderr)
 
     def test_blocks_double_gt_redirect(self) -> None:
-        r = run_hook("echo foo >> dev/local/x.md")
+        r = run_hook("echo foo >> docs/dev/project-management/x.md")
         self.assertEqual(r.returncode, 2)
         self.assertIn("shell redirect", r.stderr)
 
     def test_blocks_amp_gt_redirect(self) -> None:
-        r = run_hook("echo foo &> dev/local/x.md")
+        r = run_hook("echo foo &> docs/dev/project-management/x.md")
         self.assertEqual(r.returncode, 2)
 
     def test_blocks_redirect_with_spaces(self) -> None:
-        r = run_hook("cat README.md   >   dev/local/foo.md")
+        r = run_hook("cat README.md   >   docs/dev/project-management/foo.md")
         self.assertEqual(r.returncode, 2)
 
-    def test_blocks_tee_to_devlocal(self) -> None:
-        r = run_hook("echo foo | tee dev/local/x.md")
+    def test_blocks_tee_to_project_management(self) -> None:
+        r = run_hook("echo foo | tee docs/dev/project-management/x.md")
         self.assertEqual(r.returncode, 2)
         self.assertIn("tee", r.stderr)
 
     def test_blocks_tee_a_flag(self) -> None:
-        r = run_hook("echo foo | tee -a dev/local/x.md")
+        r = run_hook("echo foo | tee -a docs/dev/project-management/x.md")
         self.assertEqual(r.returncode, 2)
 
-    def test_blocks_redirect_into_nested_devlocal(self) -> None:
-        r = run_hook("echo foo > dev/local/prds/wip/note.md")
+    def test_blocks_redirect_into_nested_project_management(self) -> None:
+        r = run_hook("echo foo > docs/dev/project-management/prds/wip/note.md")
         self.assertEqual(r.returncode, 2)
 
     def test_blocks_noclobber_override(self) -> None:
         # `>|` is a real write redirect (noclobber override).
-        r = run_hook("echo foo >| dev/local/x.md")
+        r = run_hook("echo foo >| docs/dev/project-management/x.md")
         self.assertEqual(r.returncode, 2)
 
     def test_blocks_double_quoted_redirect_target(self) -> None:
         # A quoted path is a normal redirect target (required for spaces).
-        r = run_hook('echo foo > "dev/local/x.md"')
+        r = run_hook('echo foo > "docs/dev/project-management/x.md"')
         self.assertEqual(r.returncode, 2)
 
     def test_blocks_single_quoted_redirect_target(self) -> None:
-        r = run_hook("echo foo > 'dev/local/x.md'")
+        r = run_hook("echo foo > 'docs/dev/project-management/x.md'")
+        self.assertEqual(r.returncode, 2)
+
+    def test_blocks_redirect_to_dev_tmp(self) -> None:
+        r = run_hook("echo foo > docs/dev/tmp/x.md")
+        self.assertEqual(r.returncode, 2)
+
+    def test_blocks_tee_to_dev_tmp(self) -> None:
+        r = run_hook("echo foo | tee docs/dev/tmp/x.md")
         self.assertEqual(r.returncode, 2)
 
 
@@ -75,17 +83,17 @@ class TestAllows(unittest.TestCase):
         r = run_hook("echo foo > /tmp/x.md")
         self.assertEqual(r.returncode, 0)
 
-    def test_allows_read_of_devlocal(self) -> None:
-        r = run_hook("cat dev/local/foo.md")
+    def test_allows_read_of_project_management(self) -> None:
+        r = run_hook("cat docs/dev/project-management/foo.md")
         self.assertEqual(r.returncode, 0)
 
-    def test_allows_grep_in_devlocal(self) -> None:
-        r = run_hook("grep -r foo dev/local/")
+    def test_allows_grep_in_project_management(self) -> None:
+        r = run_hook("grep -r foo docs/dev/project-management/")
         self.assertEqual(r.returncode, 0)
 
-    def test_allows_tee_reading_from_devlocal(self) -> None:
-        # Reads FROM dev/local and writes elsewhere; no write into dev/local.
-        r = run_hook("tee /tmp/a < dev/local/x.md")
+    def test_allows_tee_reading_from_project_management(self) -> None:
+        # Reads FROM docs/dev/project-management and writes elsewhere; no write into docs/dev/project-management.
+        r = run_hook("tee /tmp/a < docs/dev/project-management/x.md")
         self.assertEqual(r.returncode, 0)
 
     def test_allows_empty_command(self) -> None:

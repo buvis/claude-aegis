@@ -169,7 +169,7 @@ class TestMultiEditGate(GateGuardTestCase):
         self.assertAllowed(self.run_hook(payload))
 
     def test_working_doc_target_allows(self):
-        r = self.run_hook(self.multiedit("/proj/dev/local/notes.md", session="m3"))
+        r = self.run_hook(self.multiedit("/proj/docs/dev/project-management/notes.md", session="m3"))
         self.assertAllowed(r)
 
     def test_prior_read_target_allows(self):
@@ -188,12 +188,12 @@ class TestMultiEditGate(GateGuardTestCase):
 
 class TestExemptions(GateGuardTestCase):
     def test_working_doc_dir_segment_exempt(self):
-        # Non-markdown file under dev/local/ is exempt via the dir segment.
-        r = self.run_hook(self.edit("/proj/dev/local/data.bin", session="x1"))
+        # Non-markdown file under docs/dev/project-management/ is exempt via the dir segment.
+        r = self.run_hook(self.edit("/proj/docs/dev/project-management/data.bin", session="x1"))
         self.assertAllowed(r)
 
     def test_prds_wip_dir_exempt(self):
-        # Path outside dev/local and with a non-doc extension, so only the
+        # Path outside docs/dev/project-management and with a non-doc extension, so only the
         # /prds/wip/ segment can grant the exemption (isolates that rule).
         r = self.run_hook(self.edit("/proj/prds/wip/spec.py", session="x2"))
         self.assertAllowed(r)
@@ -203,8 +203,8 @@ class TestExemptions(GateGuardTestCase):
         self.assertAllowed(r)
 
     def test_working_doc_substring_does_not_match(self):
-        # "/dev/local.backup/" must NOT match the "/dev/local/" segment.
-        r = self.run_hook(self.edit("/srv/dev/local.backup/code.py", session="x4"))
+        # "/docs/dev/project-management.backup/" must NOT match the "/docs/dev/project-management/" segment.
+        r = self.run_hook(self.edit("/srv/docs/dev/project-management.backup/code.py", session="x4"))
         self.assertDenied(r)
 
     def test_settings_json_exempt(self):

@@ -4,14 +4,14 @@
 
 > "What [Athena] holds is the aegis, terror of mortal men." — *Iliad*, V.738
 
-Defensive PreToolUse hooks for [Claude Code](https://claude.ai/code). Eight small Python scripts that catch the most common ways an agent quietly degrades a codebase: reaching for bash text utilities instead of dedicated tools, writing into `dev/local/` with shell redirects, slipping in a lint-suppression comment to make a warning vanish, editing the linter config to weaken a rule, attaching generated-by boilerplate to a commit, hand-rolling a poll loop to wait for a background task, force-pushing over remote history without a second look, or charging into the first edit of a file or a destructive command without investigating what it touches.
+Defensive PreToolUse hooks for [Claude Code](https://claude.ai/code). Eight small Python scripts that catch the most common ways an agent quietly degrades a codebase: reaching for bash text utilities instead of dedicated tools, writing into `docs/dev/project-management/` with shell redirects, slipping in a lint-suppression comment to make a warning vanish, editing the linter config to weaken a rule, attaching generated-by boilerplate to a commit, hand-rolling a poll loop to wait for a background task, force-pushing over remote history without a second look, or charging into the first edit of a file or a destructive command without investigating what it touches.
 
 ## What's inside
 
 | Hook | Tool matcher | What it blocks |
 |------|--------------|----------------|
 | `prefer_tools.py` | Bash | `grep`, `find`, `cat`, `head`, `tail` — surfaces the Grep/Glob/Read alternative |
-| `block_devlocal_redirects.py` | Bash | shell redirects (`>`, `>>`, `&>`, `tee`) into `dev/local/` — use Write |
+| `block_working_document_redirects.py` | Bash | shell redirects into `docs/dev/project-management/` or `docs/dev/tmp/` — use Write |
 | `block_suppression_markers.py` | Edit, Write, MultiEdit | newly added lint or type-checker suppression comments across 12 languages |
 | `protect_config.py` | Edit, Write, MultiEdit | edits to ~40 well-known linter and formatter config files |
 | `validate_commit_msg.py` | Bash | non-conventional commit messages, trailing periods, generated-by trailers |

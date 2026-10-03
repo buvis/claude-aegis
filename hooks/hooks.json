@@ -31,7 +31,7 @@
           },
           {
             "type": "command",
-            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/block_devlocal_redirects.py",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/block_working_document_redirects.py",
             "timeout": 5
           },
           {

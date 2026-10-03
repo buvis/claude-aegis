@@ -123,7 +123,8 @@ CLAUDE_SETTINGS_PATH = re.compile(r"(^|/)\.claude/settings(?:\.[^/]+)?\.json$")
 # by definition; gating them produced consecutive-deny retry storms (14x Write
 # in one observed session) with zero investigative signal.
 _WORKING_DOC_DIR_SEGMENTS = (
-    "/dev/local/",
+    "/docs/dev/project-management/",
+    "/docs/dev/tmp/",
     "/.claude/plans/",
     "/.claude/projects/",
     "/.claude/scratch/",
@@ -323,13 +324,13 @@ def is_working_doc_path(file_path: str) -> bool:
     """Return True for working-doc paths where the gate adds no signal.
 
     Matches:
-    - directory segments listed in _WORKING_DOC_DIR_SEGMENTS (e.g. dev/local,
+    - directory segments listed in _WORKING_DOC_DIR_SEGMENTS (e.g. docs/dev/project-management,
       ~/.claude/plans, prds/{backlog,wip,done})
     - filename extensions listed in _WORKING_DOC_EXTENSIONS (.md, .txt, .rst, ...)
     - exact filenames listed in _WORKING_DOC_FILENAMES (.gitignore, .env.example)
 
-    Substring-only matches do not count: "/dev/local.backup/" must not match
-    "/dev/local/", and "cmd.py" must not match the ".md" extension.
+    Substring-only matches do not count: "/docs/dev/project-management.backup/" must not match
+    "/docs/dev/project-management/", and "cmd.py" must not match the ".md" extension.
     """
     if not file_path:
         return False
