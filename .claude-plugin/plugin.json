@@ -1,6 +1,6 @@
 {
   "name": "aegis",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "PreToolUse safety net: eight hooks that block bash-over-tool, working-document redirects, suppression markers, weakened linter configs, non-conventional commits, task-completion poll loops, and automatic force pushes, plus a fact-forcing gate that demands investigation before the first edit/write or a destructive bash command.",
   "author": {
     "name": "buvis"
