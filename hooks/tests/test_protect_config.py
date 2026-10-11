@@ -3,6 +3,7 @@
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -50,6 +51,32 @@ class TestProtectConfig(unittest.TestCase):
 
     def test_blocks_eslint_config_ts(self) -> None:
         r = run_hook({"tool_input": {"file_path": "/repo/eslint.config.ts"}})
+        self.assertEqual(r.returncode, 2)
+
+    def test_allows_new_ruff_config_that_only_pins_the_python_version(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            content = '# CI runs 3.10\ntarget-version = "py310"\n'
+            path = str(Path(tmp) / "ruff.toml")
+            r = run_hook({"tool_input": {"file_path": path, "content": content}})
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_blocks_ruff_config_that_ignores_a_rule(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            content = 'target-version = "py310"\n[lint]\nignore = ["UP017"]\n'
+            path = str(Path(tmp) / "ruff.toml")
+            r = run_hook({"tool_input": {"file_path": path, "content": content}})
+        self.assertEqual(r.returncode, 2)
+
+    def test_blocks_pin_that_overwrites_existing_ruff_rules(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ruff.toml"
+            path.write_text('[lint]\nselect = ["ALL"]\n')
+            content = 'target-version = "py310"\n'
+            r = run_hook({"tool_input": {"file_path": str(path), "content": content}})
+        self.assertEqual(r.returncode, 2)
+
+    def test_blocks_ruff_config_without_content(self) -> None:
+        r = run_hook({"tool_input": {"file_path": "/repo/ruff.toml"}})
         self.assertEqual(r.returncode, 2)
 
     def test_allows_unrelated_python_file(self) -> None:

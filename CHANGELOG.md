@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **protect-config**: allow writing a `ruff.toml` that only pins `target-version`, so ruff stops applying fixes the supported Python cannot run; any other ruff config change stays blocked.
+
 ## [0.4.0] - 2026-10-03
 
 ### Changed
